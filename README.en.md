@@ -102,7 +102,7 @@ To install your own build: `BUILD=1 TV=192.168.1.12 tools/install.sh guard` (nee
 Lumen checks for a new version every few hours, and whenever Control Center opens. When there is one, Home says so once and Control Center shows "Update to Lumen x":
 
 1. Select it; Lumen downloads the new version (with progress).
-2. When the system installer opens, choose Install.
+2. When the system installer opens, Lumen Home Guard presses Update for you (TCL's installer shows no focus on its button; pressing OK works too).
 
 No computer needed. The version and APK are published both at `lumen.siabuilt.com` (Cloudflare, reachable from China) and on GitHub Releases; the former is tried first. Updating keeps your app order and settings.
 

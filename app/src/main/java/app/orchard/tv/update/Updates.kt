@@ -103,6 +103,12 @@ object Updates {
         return false
     }
 
+    /**
+     * Until when Home Guard may press Update in the system installer for Lumen's own update: set as
+     * the installer opens. TCL's installer shows no focus on its button (TCL 65V8L, 2026-10-22).
+     */
+    @Volatile var confirmSelfUntil = 0L
+
     /** Download progress 0..1 while a new version is being fetched; null otherwise. */
     var downloading by mutableStateOf<Float?>(null); private set
 
@@ -184,6 +190,7 @@ object Updates {
             )
             return
         }
+        confirmSelfUntil = System.currentTimeMillis() + 5 * 60_000L
         val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.files", apk)
         context.startActivity(
             android.content.Intent(android.content.Intent.ACTION_VIEW)
