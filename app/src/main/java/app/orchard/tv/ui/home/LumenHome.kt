@@ -233,25 +233,29 @@ fun HeroInfo(
 /** The All Apps sheet: the same neutral glass, dense enough to read rows of labels over a cover. */
 val SheetGlass = Color(0xF0222226)
 
+/** Keeps the top bar's bare text readable over bright covers. */
+private val BarShadow = Shadow(Color.Black.copy(alpha = 0.55f), blurRadius = 10f)
+
 /** Lumen's neutral glass for small chrome over any cover: a light veil and a hairline rim. */
 val LumenGlass = Color.White.copy(alpha = 0.16f)
 val LumenGlassEdge = Color.White.copy(alpha = 0.22f)
 
-/** Top left: the time, then the weather where the TV is, on one chip of glass. */
+/**
+ * Top left: the time, then the weather where the TV is. Plain text on a soft shadow, no chip: it
+ * cannot be focused, so it must not look like something to press. The status pill opposite shows
+ * its chip only when focused.
+ */
 @Composable
 fun TimeWeatherChip(now: java.time.LocalDateTime, modifier: Modifier = Modifier) {
     val w = Weather.now
     Row(
         modifier
-            .clip(RoundedCornerShape(50))
-            .background(LumenGlass)
-            .border(0.75.dp, LumenGlassEdge, RoundedCornerShape(50))
             .height(34.dp)
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        BasicText(timeText(now), style = Type.Headline.copy(color = Color.White, fontSize = 16.sp))
+        BasicText(timeText(now), style = Type.Headline.copy(color = Color.White, fontSize = 16.sp, shadow = BarShadow))
         if (w != null) {
             Box(Modifier.padding(horizontal = 4.dp).size(1.dp, 14.dp).background(Color.White.copy(alpha = 0.35f)))
             val glyph = when (w.kind) {
@@ -265,7 +269,7 @@ fun TimeWeatherChip(now: java.time.LocalDateTime, modifier: Modifier = Modifier)
             }
             GlyphIcon(glyph, if (w.kind == WeatherKind.Clear && w.day) Color(0xFFFFD25A) else Color.White, 16.dp)
             val place = Weather.place?.takeIf { it.length <= 12 }
-            BasicText(listOfNotNull(place, "${w.celsius}°").joinToString(" "), style = Type.Headline.copy(color = Color.White.copy(alpha = 0.92f)))
+            BasicText(listOfNotNull(place, "${w.celsius}°").joinToString(" "), style = Type.Headline.copy(color = Color.White.copy(alpha = 0.92f), shadow = BarShadow))
         }
     }
 }
