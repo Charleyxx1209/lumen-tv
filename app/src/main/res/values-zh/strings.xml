@@ -129,4 +129,5 @@
     <string name="continue_watching">继续播放</string>
     <string name="all_apps">全部应用</string>
     <string name="my_apps">我的应用</string>
+    <string name="minutes_left">剩余 %d 分钟</string>
 </resources>

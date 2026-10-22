@@ -130,4 +130,5 @@
     <string name="continue_watching">Resume</string>
     <string name="all_apps">All Apps</string>
     <string name="my_apps">My Apps</string>
+    <string name="minutes_left">%d min left</string>
 </resources>

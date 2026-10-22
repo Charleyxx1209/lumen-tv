@@ -238,6 +238,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         AerialSettings.relock()
         overlay = Overlay.None
         movingKey = null
-        if (resetFocus) homeResetPending = true
+        if (resetFocus) {
+            homeResetPending = true
+            heroIndex = 0
+        }
     }
 }

@@ -11,6 +11,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -101,9 +106,14 @@ fun HeroShade() {
 
 private val HeroShadow = Shadow(Color.Black.copy(alpha = 0.45f), blurRadius = 18f)
 
+/** Room for two lines of title, so the button below never moves as the titles change. */
+private val TitleBox = 92.dp
+
 /**
- * The title being resumed and a single Resume button: the only thing on the cover.
- * Left and right on the button page through the history; OK resumes.
+ * The title being resumed and one Resume button carrying the source app's icon, with how far in
+ * beside it. Everything sits at fixed places: the title fills its two-line box from the bottom,
+ * so the button stays put whatever the title's length. Left and right on the button page through
+ * the history; OK resumes.
  */
 @Composable
 fun HeroInfo(
@@ -116,25 +126,29 @@ fun HeroInfo(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val icon = remember(item.packageName) {
+        runCatching { context.packageManager.getApplicationIcon(item.packageName).toBitmap(64, 64).asImageBitmap() }.getOrNull()
+    }
     // Kept to the darkened left of the cover, clear of what the picture shows.
-    Column(modifier.widthIn(max = 420.dp)) {
-        Crossfade(targetState = item, animationSpec = tween(260, easing = Motion.EaseOut), label = "hero-title") { it ->
-            // Bilibili titles run long; short ones get the big display size.
-            val big = it.title.length <= 10
-            BasicText(
-                it.title,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                style = Type.LargeTitle.copy(
-                    fontSize = if (big) 46.sp else 26.sp,
-                    lineHeight = if (big) 54.sp else 34.sp,
-                    fontWeight = FontWeight.W700,
-                    letterSpacing = if (big) 0.06.em else 0.02.em,
-                    shadow = HeroShadow,
-                ),
-                modifier = Modifier.padding(top = 8.dp, bottom = 20.dp),
-            )
+    Column(modifier.width(420.dp)) {
+        Box(Modifier.height(TitleBox).fillMaxWidth(), contentAlignment = Alignment.BottomStart) {
+            Crossfade(targetState = item.title, animationSpec = tween(260, easing = Motion.EaseOut), label = "hero-title") { title ->
+                BasicText(
+                    title,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    style = Type.LargeTitle.copy(
+                        fontSize = 28.sp,
+                        lineHeight = 36.sp,
+                        fontWeight = FontWeight.W700,
+                        letterSpacing = 0.02.em,
+                        shadow = HeroShadow,
+                    ),
+                )
+            }
         }
+        Spacer(Modifier.height(20.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             Pressable(
                 onClick = onClick,
@@ -164,11 +178,14 @@ fun HeroInfo(
                         .clip(RoundedCornerShape(10.dp))
                         .background(bg)
                         .height(42.dp)
-                        .padding(horizontal = 26.dp),
+                        .padding(start = 12.dp, end = 22.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Canvas(Modifier.size(12.dp)) {
+                    if (icon != null) {
+                        Image(icon, null, Modifier.size(22.dp).clip(RoundedCornerShape(5.dp)))
+                    }
+                    Canvas(Modifier.size(11.dp)) {
                         val p = androidx.compose.ui.graphics.Path().apply {
                             moveTo(size.width * 0.12f, 0f)
                             lineTo(size.width, size.height / 2f)
@@ -178,6 +195,20 @@ fun HeroInfo(
                         drawPath(p, fg)
                     }
                     BasicText(stringResource(R.string.continue_watching), style = Type.Headline.copy(color = fg, fontSize = 16.sp, letterSpacing = 0.06.em))
+                }
+            }
+            val progress = item.progress
+            val left = item.minutesLeft
+            if (progress != null && left != null) {
+                Column(Modifier.padding(start = 18.dp)) {
+                    Box(Modifier.width(120.dp).height(4.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.28f))) {
+                        Box(Modifier.fillMaxHeight().fillMaxWidth(progress.coerceAtLeast(0.03f)).clip(RoundedCornerShape(50)).background(Color.White))
+                    }
+                    BasicText(
+                        stringResource(R.string.minutes_left, left),
+                        style = Type.Caption.copy(fontSize = 13.sp, color = Color.White.copy(alpha = 0.75f), shadow = HeroShadow),
+                        modifier = Modifier.padding(top = 7.dp),
+                    )
                 }
             }
         }

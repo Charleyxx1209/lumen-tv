@@ -24,6 +24,12 @@ data class HistoryItem(
     private val srcApp: String,
     private val extras: Map<String, String?>,
 ) {
+    /** How far in, 0..1; null when the app did not say. */
+    val progress: Float? get() = if (durationMs > 0) (positionMs.toFloat() / durationMs).coerceIn(0f, 1f) else null
+
+    /** Whole minutes left, at least 1; null when unknown. */
+    val minutesLeft: Int? get() = if (durationMs > 0) ((durationMs - positionMs) / 60_000).coerceAtLeast(1) else null
+
     /**
      * The intent TCL's launcher (com.tcl.cyberui, HisFavClickAction.showVideo) sends to resume this
      * title: the source app's action, the history row copied into extras, aimed at the package.
@@ -64,7 +70,7 @@ object TclHistory {
                             id = "$pkg/${s("videoId")}",
                             packageName = pkg,
                             title = title,
-                            coverUrl = s("videoImgUrl")?.takeIf { it.startsWith("http") },
+                            coverUrl = s("videoImgUrl")?.takeIf { it.startsWith("http") }?.let(::fullSize),
                             positionMs = i("currentPosition"),
                             durationMs = i("duration"),
                             receivedAt = s("receivedtime")?.toLongOrNull() ?: 0L,
@@ -77,9 +83,18 @@ object TclHistory {
         }.onFailure { Log.w(TAG, "No TCL history: $it") }.getOrNull().orEmpty()
         rows.sortedByDescending { it.receivedAt }
             .distinctBy { it.id }
+            // Watched to the end: nothing to resume (tvOS drops these from Up Next too).
+            .filterNot { it.durationMs > 0 && it.positionMs >= it.durationMs * 0.97f }
             .filter { runCatching { pm.getPackageInfo(it.packageName, 0) }.isSuccess }
             .take(limit)
     }
+
+    /**
+     * Tencent records its poster at thumbnail size (".../vcover_vt_pic/0/<id>/260", 260×364);
+     * the same path ending in /0 is the original (1280×1796). Checked 2026-10-22.
+     */
+    private fun fullSize(url: String): String =
+        if ("qpic.cn/vcover_" in url) url.replace(Regex("/\\d+$"), "/0") else url
 
     private val covers = HashMap<String, Bitmap>()
 
@@ -96,8 +111,38 @@ object TclHistory {
             var sample = 1
             while (bounds.outWidth / (sample * 2) >= w && bounds.outHeight / (sample * 2) >= h) sample *= 2
             val raw = BitmapFactory.decodeByteArray(bytes, 0, bytes.size, BitmapFactory.Options().apply { inSampleSize = sample })
-            Images.cover(raw, w, h).also { if (it !== raw) raw.recycle() }
+            if (raw.height > raw.width) posterScene(raw, w, h).also { raw.recycle() }
+            else Images.cover(raw, w, h).also { if (it !== raw) raw.recycle() }
         }.onFailure { Log.w(TAG, "Cover failed: $it") }.getOrNull()
             ?.also { synchronized(covers) { covers[url] = it } }
+    }
+
+    /**
+     * A portrait poster (Tencent) cropped to fill a wide screen would lose most of it. Instead the
+     * poster, blurred and dimmed, fills the screen, and the poster itself stands on the right,
+     * above the dock, clear of the title on the left.
+     */
+    private fun posterScene(poster: Bitmap, w: Int, h: Int): Bitmap {
+        val frosted = Images.frost(Images.cover(poster, 320, 180))
+        val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(out)
+        val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
+        canvas.drawBitmap(frosted, null, android.graphics.Rect(0, 0, w, h), paint)
+        canvas.drawColor(android.graphics.Color.argb(70, 0, 0, 0))
+        frosted.recycle()
+        val ph = h * 0.6f
+        val pw = ph * poster.width / poster.height
+        val left = w * 0.9f - pw
+        val top = h * 0.09f
+        val dst = android.graphics.RectF(left, top, left + pw, top + ph)
+        val r = h * 0.022f
+        paint.setShadowLayer(h * 0.03f, 0f, h * 0.012f, android.graphics.Color.argb(120, 0, 0, 0))
+        canvas.drawRoundRect(dst, r, r, paint.apply { color = android.graphics.Color.BLACK })
+        paint.clearShadowLayer()
+        canvas.save()
+        canvas.clipPath(android.graphics.Path().apply { addRoundRect(dst, r, r, android.graphics.Path.Direction.CW) })
+        canvas.drawBitmap(poster, null, dst, paint)
+        canvas.restore()
+        return out
     }
 }
