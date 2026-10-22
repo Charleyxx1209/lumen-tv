@@ -37,8 +37,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +59,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import app.orchard.tv.COVER_H
+import app.orchard.tv.COVER_W
 import app.orchard.tv.R
 import app.orchard.tv.apps.AppEntry
 import app.orchard.tv.history.HistoryItem
@@ -73,18 +76,25 @@ import app.orchard.tv.ui.theme.Type
 import app.orchard.tv.weather.Weather
 import app.orchard.tv.weather.WeatherKind
 
-/** Covers are decoded at 720p: sharp enough under the shade, small enough for a 2 GB TV. */
-private const val COVER_W = 1280
-private const val COVER_H = 720
-
-/** The cover of [item], once downloaded; null until then and when it cannot be had. */
+/**
+ * The cover of [item]: at once when it was fetched ahead (HomeViewModel.refreshHistory), else once
+ * downloaded. Until then the previous cover stays up, so the picture never drops to the wallpaper
+ * or shows the last title under the new one's name for longer than the crossfade.
+ */
 @Composable
 fun heroCover(item: HistoryItem?): ImageBitmap? {
     val url = item?.coverUrl
-    val bmp by produceState<ImageBitmap?>(null, url) {
-        value = url?.let { TclHistory.cover(it, COVER_W, COVER_H)?.asImageBitmap() }
+    var shown by remember { mutableStateOf<ImageBitmap?>(null) }
+    val ready = remember(url) { url?.let { TclHistory.cached(it)?.asImageBitmap() } }
+    LaunchedEffect(url, ready) {
+        when {
+            item == null -> shown = null
+            ready != null -> shown = ready
+            url == null -> shown = null
+            else -> TclHistory.cover(url, COVER_W, COVER_H)?.let { shown = it.asImageBitmap() }
+        }
     }
-    return bmp
+    return ready ?: shown
 }
 
 /**

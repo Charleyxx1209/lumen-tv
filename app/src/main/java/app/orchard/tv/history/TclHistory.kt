@@ -129,6 +129,12 @@ object TclHistory {
 
     private val covers = HashMap<String, Bitmap>()
 
+    /** A cover already fetched, or null. Cheap: for drawing without waiting. */
+    fun cached(url: String): Bitmap? = synchronized(covers) { covers[url] }
+
+    /** Drops covers of titles no longer in the history, so the cache stays the history's size. */
+    fun keepOnly(urls: Set<String>) = synchronized(covers) { covers.keys.retainAll(urls) }
+
     /** The cover, cut to fill a [w]×[h] screen. Kept for the session; null when it cannot be had. */
     suspend fun cover(url: String, w: Int, h: Int): Bitmap? = withContext(Dispatchers.IO) {
         synchronized(covers) { covers[url] }?.let { return@withContext it }

@@ -45,6 +45,10 @@ sealed interface Overlay {
 
 const val DOCK_SIZE = 5
 
+/** Covers are decoded at 720p: sharp enough under the shade, small enough for a 2 GB TV. */
+const val COVER_W = 1280
+const val COVER_H = 720
+
 enum class CcPage { Main, Inputs, InputSettings, Update }
 
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
@@ -129,6 +133,10 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             val list = TclHistory.load(context)
             if (list.map { it.id } != history.map { it.id }) heroIndex = 0
             history = list
+            // Fetch every cover now, the first one first, so paging through never waits on the network.
+            val urls = list.mapNotNull { it.coverUrl }
+            TclHistory.keepOnly(urls.toSet())
+            urls.forEach { TclHistory.cover(it, COVER_W, COVER_H) }
         }
     }
 
