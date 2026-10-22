@@ -67,6 +67,7 @@ import app.orchard.tv.HomeViewModel
 import app.orchard.tv.Overlay
 import app.orchard.tv.R
 import app.orchard.tv.settings.AerialSettings
+import app.orchard.tv.apps.ALL_APPS_KEY
 import app.orchard.tv.apps.AppEntry
 import app.orchard.tv.ui.control.ControlCenter
 import app.orchard.tv.ui.wallpaper.WallpaperSheet
@@ -79,12 +80,12 @@ import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
-private const val COLUMNS = 5
+private const val COLUMNS = 6
 
 /** Grid geometry for the screen at hand. On a 1080p TV this is a 960×540 dp canvas. */
 private class GridMetrics(screenW: Dp, screenH: Dp, oneRow: Boolean) {
     val margin = 56.dp
-    val gap = 28.dp
+    val gap = 22.dp
     val tileW = (screenW - margin * 2 - gap * (COLUMNS - 1)) / COLUMNS
     val tileH = tileW * 9f / 16f
     val pitchX = tileW + gap
@@ -121,8 +122,12 @@ fun HomeScreen(
     onAppInfo: (String) -> Unit,
     onUninstall: (String) -> Unit,
     onStartScreensaver: () -> Unit,
+    onResume: (app.orchard.tv.history.HistoryItem) -> Unit,
 ) {
-    val apps = vm.apps
+    // Lumen: Home shows the dock (five apps and All Apps); the rest live behind All Apps.
+    val apps = vm.dock
+    val history = vm.history
+    val hero = history.getOrNull(vm.heroIndex.coerceIn(0, (history.size - 1).coerceAtLeast(0)))
     val overlay = vm.overlay
     val moving = vm.movingKey
     val reduced = LocalReducedMotion.current
@@ -133,6 +138,8 @@ fun HomeScreen(
     val requesters = remember { HashMap<String, FocusRequester>() }
     fun requester(key: String) = requesters.getOrPut(key) { FocusRequester() }
     val pillRequester = remember { FocusRequester() }
+    val heroRequester = remember { FocusRequester() }
+    var heroFocused by remember { mutableStateOf(false) }
 
     var focusedKey by remember { mutableStateOf<String?>(null) }
     var pillFocused by remember { mutableStateOf(false) }
@@ -157,7 +164,10 @@ fun HomeScreen(
         if (!vm.loaded || overlay != Overlay.None) return@LaunchedEffect
         withFrameNanos { }
         val index = apps.indexOfFirst { it.key == focusedKey }
-        if (pillFocused && focusedKey != null) runCatching { pillRequester.requestFocus() } else focusApp(if (index >= 0) index else 0)
+        if (pillFocused && focusedKey != null) runCatching { pillRequester.requestFocus() }
+        else if (focusedKey == null && history.isNotEmpty()) runCatching { heroRequester.requestFocus() }
+        else if (heroFocused && history.isNotEmpty()) runCatching { heroRequester.requestFocus() }
+        else focusApp(if (index >= 0) index else 0)
     }
     // An app vanished from under the focus (uninstalled or hidden): take its neighbour.
     LaunchedEffect(apps) {
@@ -179,7 +189,7 @@ fun HomeScreen(
         if (windowFocused && vm.homeResetPending && vm.loaded) {
             withFrameNanos { }
             dragged = false
-            focusApp(0)
+            if (history.isNotEmpty()) runCatching { heroRequester.requestFocus() } else focusApp(0)
             vm.homeResetPending = false
         }
     }
@@ -237,8 +247,8 @@ fun HomeScreen(
                 }
             },
     ) {
-        val metrics = remember(maxWidth, maxHeight, AerialSettings.oneRowHome) {
-            GridMetrics(maxWidth, maxHeight, AerialSettings.oneRowHome)
+        val metrics = remember(maxWidth, maxHeight) {
+            GridMetrics(maxWidth, maxHeight, true)
         }
         val rows = (apps.size + COLUMNS - 1) / COLUMNS
         val collapsePx = with(density) { (metrics.topRowY - metrics.restY).toPx() }
@@ -294,37 +304,38 @@ fun HomeScreen(
                     (metrics.topRowY + metrics.tileH + PlatePadV).toPx(),
                 )
             }
+            val cover = heroCover(hero)
             HomeBackground(
-                // The chosen wallpaper; in "Follow App" mode, light from the focused app.
-                backdrop = Wallpapers.backdrop ?: ambientApp?.art?.backdrop,
-                frosted = Wallpapers.frosted.takeIf { Wallpapers.backdrop != null },
+                // The title being resumed fills the screen; without one, the chosen wallpaper (in
+                // "Follow App" mode, light from the focused app).
+                backdrop = cover ?: Wallpapers.backdrop ?: ambientApp?.art?.backdrop,
+                frosted = Wallpapers.frosted.takeIf { cover == null && Wallpapers.backdrop != null },
                 plate = plate,
                 scroll = { scroll.value },
                 collapse = collapsePx,
             )
 
             Box(Modifier.fillMaxSize().offset { IntOffset(0, -scroll.value.roundToInt()) }) {
-                val clockRight = AerialSettings.clockRight
-                // With one row the wallpaper keeps the screen, as under tvOS's full-screen shelf: no
-                // big clock, only the time and weather in one line, top left or beside the pill.
-                if (!AerialSettings.oneRowHome) {
-                    ShelfClock(
-                        now = now,
-                        alignEnd = clockRight,
-                        modifier = Modifier
-                            .align(if (clockRight) Alignment.TopEnd else Alignment.TopStart)
-                            .padding(horizontal = metrics.margin)
-                            .padding(top = metrics.clockY)
-                            .graphicsLayer { alpha = 1f - (scroll.value / collapsePx * 1.6f).coerceIn(0f, 1f) },
-                    )
-                } else if (!clockRight) {
-                    CornerClock(
-                        now = now,
-                        modifier = Modifier
-                            .padding(start = metrics.margin, top = 28.dp)
-                            .graphicsLayer { alpha = 1f - (scroll.value / collapsePx * 1.6f).coerceIn(0f, 1f) },
+                if (cover != null) HeroShade()
+                if (hero != null) {
+                    HeroInfo(
+                        item = hero,
+                        sourceLabel = vm.apps.firstOrNull { it.packageName == hero.packageName }?.label,
+                        count = history.size,
+                        index = vm.heroIndex,
+                        enabled = gridEnabled && moving == null,
+                        focusRequester = heroRequester,
+                        onFocused = { heroFocused = it; if (it) { pillFocused = false } },
+                        onStep = { d -> vm.heroIndex = (vm.heroIndex + d + history.size) % history.size },
+                        onClick = { onResume(hero) },
+                        modifier = Modifier.padding(start = metrics.margin, top = 150.dp),
                     )
                 }
+                BasicText(
+                    stringResource(R.string.my_apps),
+                    style = Type.Title.copy(color = Color.White.copy(alpha = 0.92f)),
+                    modifier = Modifier.offset { IntOffset(metrics.margin.roundToPx(), (metrics.topRowY - 34.dp).roundToPx()) },
+                )
 
                 apps.forEachIndexed { index, app ->
                     key(app.key) {
@@ -348,13 +359,16 @@ fun HomeScreen(
                                 { (1f - scroll.value / collapsePx * 2f).coerceIn(0f, 1f) }
                             } else null,
                             onFocused = {
+                                heroFocused = false
                                 focusedKey = app.key
                                 lastFocusedIndex = index
                                 pillFocused = false
                             },
                             onClick = { bounds ->
                                 val mover = moving
-                                if (mover == null) onLaunch(app, bounds)
+                                if (mover == null) {
+                                    if (app.key == ALL_APPS_KEY) vm.overlay = Overlay.AllApps else onLaunch(app, bounds)
+                                }
                                 // While moving, tapping a tile puts the app there; tapping the app
                                 // itself is done.
                                 else if (mover == app.key) vm.endMove()
@@ -364,7 +378,7 @@ fun HomeScreen(
                                 }
                             },
                             onLongPress = { bounds ->
-                                if (moving == null) vm.overlay = Overlay.AppMenu(app.key, bounds ?: Rect.Zero)
+                                if (moving == null && app.key != ALL_APPS_KEY) vm.overlay = Overlay.AppMenu(app.key, bounds ?: Rect.Zero)
                             },
                             modifier = Modifier.offset { slot.value },
                         )
@@ -393,18 +407,10 @@ fun HomeScreen(
                 .graphicsLayer { alpha = if (overlay is Overlay.ControlCenter) 0f else 1f },
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (AerialSettings.oneRowHome && AerialSettings.clockRight) {
-                CornerClock(
-                    now = now,
-                    modifier = Modifier
-                        .padding(end = 14.dp)
-                        .graphicsLayer { alpha = 1f - (scroll.value / collapsePx * 1.6f).coerceIn(0f, 1f) },
-                )
-            }
             StatusPill(
                 now = now,
                 network = vm.network,
-                showTime = if (dragged) pastShelf else focusedRow > 0,
+                showTime = true,
                 enabled = gridEnabled && moving == null,
                 focusRequester = pillRequester,
                 onFocused = { gained ->
@@ -425,6 +431,22 @@ fun HomeScreen(
                 },
             )
         }
+
+        WeatherChip(
+            Modifier
+                .padding(start = metrics.margin - 14.dp, top = 28.dp)
+                .graphicsLayer { alpha = if (overlay is Overlay.ControlCenter) 0f else 1f },
+        )
+
+        AllAppsSheet(
+            visible = overlay is Overlay.AllApps,
+            apps = vm.moreApps,
+            onLaunch = { app, bounds -> vm.overlay = Overlay.None; onLaunch(app, bounds) },
+            onDismiss = {
+                vm.overlay = Overlay.None
+                scope.launch { withFrameNanos { }; runCatching { requester(ALL_APPS_KEY).requestFocus() } }
+            },
+        )
 
         AnimatedVisibility(
             visible = moving != null,
@@ -509,6 +531,6 @@ fun HomeScreen(
             onCancel = { vm.overlay = Overlay.None },
         )
 
-        Screensaver(visible = vm.screensaverVisible, apps = apps, now = now, skips = vm.screensaverSkips)
+        Screensaver(visible = vm.screensaverVisible, apps = vm.apps, now = now, skips = vm.screensaverSkips)
     }
 }

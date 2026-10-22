@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Aerial</string>
-    <string name="guard_name">Aerial Home Guard</string>
+    <string name="app_name">Lumen</string>
+    <string name="guard_name">Lumen Home Guard</string>
     <string name="guard_description">Keeps Aerial as your home screen on TVs that do not let you change it. Reads no screen content.</string>
 
     <string name="greeting_morning">Good morning</string>
@@ -127,4 +127,7 @@
     <string name="pin_confirm">Enter It Again</string>
     <string name="pin_wrong">Wrong PIN. Try again.</string>
     <string name="pin_mismatch">The two PINs differ. Choose one again.</string>
+    <string name="continue_watching">Resume</string>
+    <string name="all_apps">All Apps</string>
+    <string name="my_apps">My Apps</string>
 </resources>

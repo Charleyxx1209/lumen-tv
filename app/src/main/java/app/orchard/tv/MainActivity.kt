@@ -121,6 +121,7 @@ class MainActivity : ComponentActivity() {
                     onUninstall = { open(Intent(Intent.ACTION_DELETE, Uri.fromParts("package", it, null)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) },
                     // Posted so the key-up of the Back press that started it does not end it at once.
                     onStartScreensaver = { idleHandler.postDelayed({ showScreensaver.run() }, 150) },
+                    onResume = ::resume,
                 )
             }
         }
@@ -301,6 +302,7 @@ class MainActivity : ComponentActivity() {
         GuardSetup.ensureEnabled(this)
         idleHandler.postDelayed({ GuardSetup.rebindIfStalled(this) }, 5_000)
         vm.reloadIfPackagesChanged()
+        vm.refreshHistory()
         ContextCompat.registerReceiver(
             this, packageReceiver,
             IntentFilter().apply {
@@ -380,6 +382,17 @@ class MainActivity : ComponentActivity() {
         } catch (e: Exception) {
             Toast.makeText(this, getString(R.string.launch_failed, app.label), Toast.LENGTH_SHORT).show()
         }
+    }
+
+    /** Resumes a title from the TV's watch history; if its app will not take it, opens the app. */
+    private fun resume(item: app.orchard.tv.history.HistoryItem) {
+        openedAppSinceHome = true
+        val resumed = runCatching { startActivity(item.resumeIntent()) }
+            .onFailure { android.util.Log.w("LumenHistory", "Resume failed for ${item.packageName}: $it") }
+            .isSuccess
+        if (resumed) return
+        vm.apps.firstOrNull { it.packageName == item.packageName }?.let { launch(it, null) }
+            ?: Toast.makeText(this, R.string.unavailable, Toast.LENGTH_SHORT).show()
     }
 
     private fun open(intent: Intent) {

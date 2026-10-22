@@ -46,6 +46,36 @@ fun sourceEntry(source: TvSource): AppEntry = AppEntry(
 
 const val SOURCE_KEY_PREFIX = "input:"
 
+const val ALL_APPS_KEY = "lumen:all"
+
+/** Lumen's last dock tile: four rounded squares on graphite, opening every other app. */
+fun allAppsEntry(context: android.content.Context): AppEntry {
+    val w = TileArtFactory.W
+    val h = TileArtFactory.H
+    val bmp = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+    android.graphics.Canvas(bmp).apply {
+        drawColor(0xFF3A3A3F.toInt())
+        val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { color = 0xF2FFFFFF.toInt() }
+        val cell = h * 0.17f
+        val gap = h * 0.07f
+        val left = (w - cell * 2 - gap) / 2f
+        val top = (h - cell * 2 - gap) / 2f
+        for (row in 0..1) for (col in 0..1) {
+            val x = left + col * (cell + gap)
+            val y = top + row * (cell + gap)
+            drawRoundRect(x, y, x + cell, y + cell, cell * 0.28f, cell * 0.28f, paint)
+        }
+    }
+    return AppEntry(
+        packageName = ALL_APPS_KEY,
+        label = context.getString(app.orchard.tv.R.string.all_apps),
+        component = ComponentName("lumen", "all"),
+        leanback = false,
+        removable = false,
+        art = TileArtFactory.fromBanner(android.graphics.drawable.BitmapDrawable(context.resources, bmp)),
+    )
+}
+
 object AppCatalog {
     /** Xiaomi's app store declares only this category, not CATEGORY_LAUNCHER (MiTV-MFTR0). */
     private const val CATEGORY_APPSTORE_LAUNCHER = "android.intent.category.APPSTORE_LAUNCHER"

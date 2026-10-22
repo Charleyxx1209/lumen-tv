@@ -59,6 +59,12 @@ class LayoutStore(context: Context) {
 /** First-run arrangement: streaming apps first, the TV's own utilities last. */
 private object Defaults {
     private val preferred = listOf(
+        // TCL 65V8L (China): Lumen's dock, in the owner's order.
+        "com.xiaodianshi.tv.yst",          // 哔哩哔哩 / 云视听小电视
+        "com.ktcp.csvideo",                // 腾讯视频
+        "com.tcl.qiyiguo",                 // 爱奇艺
+        "com.cibn.tv",                     // 优酷 / CIBN 酷喵
+        "com.hunantv.market",              // 芒果 TV
         "com.ktcp.video",                  // 云视听极光
         "com.gitvdemo.video",              // 银河奇异果
         "com.cibn.tv",                     // CIBN 酷喵

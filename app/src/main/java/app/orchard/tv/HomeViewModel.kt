@@ -13,7 +13,10 @@ import app.orchard.tv.apps.AppCatalog
 import app.orchard.tv.apps.AppEntry
 import app.orchard.tv.apps.CustomIcons
 import app.orchard.tv.apps.LayoutStore
+import app.orchard.tv.apps.allAppsEntry
 import app.orchard.tv.apps.sourceEntry
+import app.orchard.tv.history.HistoryItem
+import app.orchard.tv.history.TclHistory
 import app.orchard.tv.settings.AerialSettings
 import app.orchard.tv.system.Brightness
 import app.orchard.tv.system.HomeStatus
@@ -34,9 +37,13 @@ sealed interface Overlay {
     data class ControlCenter(val page: CcPage = CcPage.Main) : Overlay
     data class AppMenu(val key: String, val anchor: Rect) : Overlay
     data object HiddenApps : Overlay
+    /** Every app past the dock, behind the dock's last tile. */
+    data object AllApps : Overlay
     data object Wallpaper : Overlay
     data class Pin(val mode: PinMode, val onDone: () -> Unit) : Overlay
 }
+
+const val DOCK_SIZE = 5
 
 enum class CcPage { Main, Inputs, InputSettings, Update }
 
@@ -48,6 +55,16 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     var apps by mutableStateOf<List<AppEntry>>(emptyList()); private set
     var hiddenApps by mutableStateOf<List<AppEntry>>(emptyList()); private set
     var loaded by mutableStateOf(false); private set
+
+    /** Lumen's dock: the first [DOCK_SIZE] apps in the owner's order, then the All Apps tile. */
+    val dock: List<AppEntry> get() = apps.take(DOCK_SIZE) + allApps
+    /** Everything past the dock, shown behind the All Apps tile. */
+    val moreApps: List<AppEntry> get() = apps.drop(DOCK_SIZE)
+    private val allApps by lazy { allAppsEntry(context) }
+
+    /** What the owner was watching, newest first (TCL's launcher history); empty elsewhere. */
+    var history by mutableStateOf<List<HistoryItem>>(emptyList()); private set
+    var heroIndex by mutableStateOf(0)
 
     var overlay by mutableStateOf<Overlay>(Overlay.None)
     var movingKey by mutableStateOf<String?>(null); private set
@@ -103,6 +120,15 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
             sources = withContext(Dispatchers.Default) { SystemProbe.sources(ctx) }
             arrange()
             loaded = true
+        }
+        refreshHistory()
+    }
+
+    fun refreshHistory() {
+        viewModelScope.launch {
+            val list = TclHistory.load(context)
+            if (list.map { it.id } != history.map { it.id }) heroIndex = 0
+            history = list
         }
     }
 
@@ -193,7 +219,9 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         val key = movingKey ?: return
         val from = apps.indexOfFirst { it.key == key }
         if (from < 0) return
-        val to = (from + delta).coerceIn(0, apps.lastIndex)
+        // Dock apps move only within the dock.
+        val last = if (from < DOCK_SIZE) minOf(DOCK_SIZE, apps.size) - 1 else apps.lastIndex
+        val to = (from + delta).coerceIn(if (from < DOCK_SIZE) 0 else DOCK_SIZE, last)
         if (to == from) return
         store.move(key, apps[to].key)
         arrange()
