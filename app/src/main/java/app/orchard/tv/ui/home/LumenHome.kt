@@ -135,7 +135,8 @@ fun HeroInfo(
     }
     // Kept to the darkened left of the cover, clear of what the picture shows.
     Column(modifier.width(420.dp)) {
-        Box(Modifier.height(TitleBox).fillMaxWidth(), contentAlignment = Alignment.BottomStart) {
+        // Titles start at the same line whatever their length; the box keeps the rows below in place.
+        Box(Modifier.height(TitleBox).fillMaxWidth(), contentAlignment = Alignment.TopStart) {
             Crossfade(targetState = item.title, animationSpec = tween(260, easing = Motion.EaseOut), label = "hero-title") { title ->
                 BasicText(
                     title,
@@ -220,7 +221,7 @@ fun HeroInfo(
 }
 
 /** The All Apps sheet: the same neutral glass, dense enough to read rows of labels over a cover. */
-val SheetGlass = Color(0xD92A2A2E)
+val SheetGlass = Color(0xF0222226)
 
 /** Lumen's neutral glass for small chrome over any cover: a light veil and a hairline rim. */
 val LumenGlass = Color.White.copy(alpha = 0.16f)
@@ -297,7 +298,7 @@ fun AllAppsSheet(
         exit = fadeOut(tween(150)) + scaleOut(tween(150, easing = Motion.EaseOut), targetScale = 0.97f),
         modifier = Modifier.fillMaxSize(),
     ) {
-        Box(Modifier.fillMaxSize().dismissOnTap(onDismiss).background(Color.Black.copy(alpha = 0.55f)), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxSize().dismissOnTap(onDismiss).background(Color.Black.copy(alpha = 0.72f)), contentAlignment = Alignment.Center) {
             // Neutral glass, as on Home's chips: a cool grey veil and a hairline rim, never tinted
             // by whatever wallpaper Aerial last chose.
             Column(

@@ -150,8 +150,9 @@ object TclHistory {
 
     /**
      * A portrait poster (Tencent) cropped to fill a wide screen would lose most of it. Instead the
-     * poster, blurred and dimmed, fills the screen, and the poster itself stands on the right,
-     * below the top bar and above the dock, clear of the title on the left.
+     * poster, blurred and dimmed, fills the screen, and the poster itself takes the right half
+     * from top to bottom, fading into that ground on its left and toward the dock, like key art
+     * on a poster wall. The title on the left and the centred page dots stay on the ground.
      */
     private fun posterScene(poster: Bitmap, w: Int, h: Int): Bitmap {
         val frosted = Images.frost(Images.cover(poster, 320, 180))
@@ -159,23 +160,25 @@ object TclHistory {
         val canvas = android.graphics.Canvas(out)
         val paint = android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG or android.graphics.Paint.ANTI_ALIAS_FLAG)
         canvas.drawBitmap(frosted, null, android.graphics.Rect(0, 0, w, h), paint)
-        canvas.drawColor(android.graphics.Color.argb(70, 0, 0, 0))
+        canvas.drawColor(android.graphics.Color.argb(90, 0, 0, 0))
         frosted.recycle()
-        // Below the top bar (to ~12% of the height), above the dock (from ~74%); right of the
-        // centred page dots, as large as that leaves.
-        val ph = h * 0.58f
-        val pw = ph * poster.width / poster.height
-        val left = w * 0.8f - pw
-        val top = h * 0.14f
-        val dst = android.graphics.RectF(left, top, left + pw, top + ph)
-        val r = h * 0.022f
-        paint.setShadowLayer(h * 0.03f, 0f, h * 0.012f, android.graphics.Color.argb(120, 0, 0, 0))
-        canvas.drawRoundRect(dst, r, r, paint.apply { color = android.graphics.Color.BLACK })
-        paint.clearShadowLayer()
-        canvas.save()
-        canvas.clipPath(android.graphics.Path().apply { addRoundRect(dst, r, r, android.graphics.Path.Direction.CW) })
-        canvas.drawBitmap(poster, null, dst, paint)
-        canvas.restore()
+
+        // The poster on a layer of its own, its edges faded by masking that layer.
+        val pw = w / 2
+        val ph = pw * poster.height / poster.width
+        val layer = Bitmap.createBitmap(pw, h, Bitmap.Config.ARGB_8888)
+        val lc = android.graphics.Canvas(layer)
+        val top = -(h * 0.055f)
+        lc.drawBitmap(poster, null, android.graphics.RectF(0f, top, pw.toFloat(), top + ph), paint)
+        val mask = android.graphics.Paint().apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.DST_IN) }
+        val clear = android.graphics.Color.TRANSPARENT
+        val solid = android.graphics.Color.BLACK
+        mask.shader = android.graphics.LinearGradient(0f, 0f, pw * 0.28f, 0f, clear, solid, android.graphics.Shader.TileMode.CLAMP)
+        lc.drawRect(0f, 0f, pw.toFloat(), h.toFloat(), mask)
+        mask.shader = android.graphics.LinearGradient(0f, h * 0.62f, 0f, h * 0.86f, solid, clear, android.graphics.Shader.TileMode.CLAMP)
+        lc.drawRect(0f, 0f, pw.toFloat(), h.toFloat(), mask)
+        canvas.drawBitmap(layer, (w - pw).toFloat(), 0f, null)
+        layer.recycle()
         return out
     }
 }

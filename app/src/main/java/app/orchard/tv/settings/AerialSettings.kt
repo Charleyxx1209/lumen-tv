@@ -19,7 +19,8 @@ enum class FocusStyle(val key: String) {
     Standard("standard"), HighContrast("high_contrast");
 
     companion object {
-        fun of(key: String?) = entries.firstOrNull { it.key == key } ?: HighContrast
+        // New TV OS: tvOS's lift and sheen without a frame, unless the owner chose the frame.
+        fun of(key: String?) = entries.firstOrNull { it.key == key } ?: Standard
     }
 }
 
@@ -29,7 +30,7 @@ object AerialSettings {
     private var started = false
     private lateinit var app: Context
 
-    var focusStyle by mutableStateOf(FocusStyle.HighContrast); private set
+    var focusStyle by mutableStateOf(FocusStyle.Standard); private set
 
     /** TV inputs pinned to Home as tiles, by TvInputInfo id. */
     var pinnedSources by mutableStateOf<Set<String>>(emptySet()); private set
