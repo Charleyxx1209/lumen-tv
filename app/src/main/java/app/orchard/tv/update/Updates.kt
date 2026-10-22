@@ -25,7 +25,9 @@ import java.net.URL
  */
 object Updates {
     private const val TAG = "LumenUpdates"
-    private const val PREFS = "updates"
+    // Not "updates": builds up to versionCode 41 kept Aerial's latest version (1.26) there, read
+    // from Aerial's site, which then showed as a newer Lumen (TCL 65V8L, 2026-10-22).
+    private const val PREFS = "lumen_updates"
     private val VERSION_URLS = listOf(
         "https://cdn.jsdelivr.net/gh/Charleyxx1209/lumen-tv@main/version.txt",
         "https://raw.githubusercontent.com/Charleyxx1209/lumen-tv/main/version.txt",

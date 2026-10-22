@@ -193,6 +193,29 @@ fun HomeScreen(
         runCatching { requester(key).requestFocus() }
     }
     val windowFocused = LocalWindowInfo.current.isWindowFocused
+    // A toast or a system dialog takes the window's focus for a moment; when it comes back, Android
+    // hands it to the top-most control (the status pill). Put it back where it was instead.
+    // Where focus was when the window lost it: "hero", "pill", or an app's key.
+    var focusBeforeBlur by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(windowFocused) {
+        if (!windowFocused) {
+            focusBeforeBlur = when {
+                heroFocused -> "hero"
+                pillFocused -> "pill"
+                else -> focusedKey
+            }
+            return@LaunchedEffect
+        }
+        val was = focusBeforeBlur ?: return@LaunchedEffect
+        focusBeforeBlur = null
+        if (overlay != Overlay.None || moving != null || vm.homeResetPending) return@LaunchedEffect
+        withFrameNanos { }
+        when (was) {
+            "pill" -> Unit
+            "hero" -> if (history.isNotEmpty()) runCatching { heroRequester.requestFocus() }
+            else -> focusApp(apps.indexOfFirst { it.key == was }.coerceAtLeast(0))
+        }
+    }
     LaunchedEffect(windowFocused, vm.homeResetPending, vm.loaded) {
         if (windowFocused && vm.homeResetPending && vm.loaded) {
             withFrameNanos { }
