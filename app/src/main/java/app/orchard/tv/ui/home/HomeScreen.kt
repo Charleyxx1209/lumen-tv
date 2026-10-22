@@ -169,6 +169,14 @@ fun HomeScreen(
         else if (heroFocused && history.isNotEmpty()) runCatching { heroRequester.requestFocus() }
         else focusApp(if (index >= 0) index else 0)
     }
+    // History arrives after the apps: the first time it does, Home starts on the title to resume.
+    var heroGreeted by remember { mutableStateOf(false) }
+    LaunchedEffect(history.isNotEmpty(), vm.loaded) {
+        if (heroGreeted || history.isEmpty() || !vm.loaded || overlay != Overlay.None) return@LaunchedEffect
+        heroGreeted = true
+        withFrameNanos { }
+        runCatching { heroRequester.requestFocus() }
+    }
     // An app vanished from under the focus (uninstalled or hidden): take its neighbour.
     LaunchedEffect(apps) {
         if (focusedKey != null && apps.none { it.key == focusedKey } && overlay == Overlay.None) {

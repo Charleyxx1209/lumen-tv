@@ -111,7 +111,7 @@ object Weather {
             lon = loc[1].toFloat()
             prefs.edit {
                 putFloat("lat", lat); putFloat("lon", lon)
-                putString("place", ip.optString("city").ifBlank { null })
+                putString("place", ip.optString("city").ifBlank { null }?.let(::localName))
                 putLong("located_at", System.currentTimeMillis())
             }
         }
@@ -147,6 +147,13 @@ object Weather {
         refresh()
         return true
     }
+
+    /** ipinfo names cities in English ("Shanghai"); Open-Meteo's geocoder knows the Chinese name. */
+    private fun localName(city: String): String = runCatching {
+        val q = java.net.URLEncoder.encode(city, "UTF-8")
+        JSONObject(get("https://geocoding-api.open-meteo.com/v1/search?name=$q&count=1&language=zh&format=json"))
+            .getJSONArray("results").getJSONObject(0).optString("name").ifBlank { city }
+    }.getOrDefault(city)
 
     /** Back to guessing the place from the network. */
     fun useNetworkLocation() {
