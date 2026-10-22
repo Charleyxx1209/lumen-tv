@@ -93,7 +93,16 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
 
     private var loadJob: Job? = null
 
+    /**
+     * Video apps write to TCL's history when playback stops, which can land just after Home is
+     * back in front: a read on resume alone missed the title just watched. Watch the table too.
+     */
+    private val historyObserver = object : android.database.ContentObserver(android.os.Handler(android.os.Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) = refreshHistory(debounceMs = 600)
+    }
+
     init {
+        runCatching { app.contentResolver.registerContentObserver(TclHistory.URI, true, historyObserver) }
         reload()
         // A tile picture set or removed from the phone page.
         viewModelScope.launch { snapshotFlow { CustomIcons.version }.drop(1).collect { reload() } }
@@ -128,8 +137,12 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         refreshHistory()
     }
 
-    fun refreshHistory() {
-        viewModelScope.launch {
+    private var historyJob: Job? = null
+
+    fun refreshHistory(debounceMs: Long = 0) {
+        historyJob?.cancel()
+        historyJob = viewModelScope.launch {
+            if (debounceMs > 0) kotlinx.coroutines.delay(debounceMs)
             val list = TclHistory.load(context)
             if (list.map { it.id } != history.map { it.id }) heroIndex = 0
             history = list
@@ -146,6 +159,10 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         val (visible, hidden) = store.arrange(all + pinned)
         apps = visible
         hiddenApps = hidden
+    }
+
+    override fun onCleared() {
+        runCatching { context.contentResolver.unregisterContentObserver(historyObserver) }
     }
 
     /** Drops the picture chosen on the phone page; the tile goes back to the app's own artwork. */

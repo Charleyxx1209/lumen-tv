@@ -51,7 +51,7 @@ data class HistoryItem(
  */
 object TclHistory {
     private const val TAG = "LumenHistory"
-    private val URI = Uri.parse("content://com.tcl.cyberui.historyVideofavourites/HistoryTableName")
+    val URI: Uri = Uri.parse("content://com.tcl.cyberui.historyVideofavourites/HistoryTableName")
     private val STRING_EXTRAS = listOf("startUpMode", "videoId", "episodeId", "cmdstring", "cmdInfo", "definition", "userKey")
 
     /** The latest titles, newest first, one per video, only for apps still installed. */

@@ -301,6 +301,8 @@ class MainActivity : ComponentActivity() {
         idleHandler.postDelayed({ GuardSetup.rebindIfStalled(this) }, 5_000)
         vm.reloadIfPackagesChanged()
         vm.refreshHistory()
+        // And once more shortly after, for apps that write their history only as they stop.
+        idleHandler.postDelayed({ vm.refreshHistory() }, 3_000)
         ContextCompat.registerReceiver(
             this, packageReceiver,
             IntentFilter().apply {
