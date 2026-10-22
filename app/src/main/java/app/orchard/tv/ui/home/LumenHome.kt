@@ -12,6 +12,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -90,11 +91,11 @@ fun heroCover(item: HistoryItem?): ImageBitmap? {
 fun HeroShade() {
     Canvas(Modifier.fillMaxSize()) {
         drawRect(Brush.horizontalGradient(
-            0f to Color.Black.copy(alpha = 0.72f), 0.28f to Color.Black.copy(alpha = 0.4f), 0.55f to Color.Transparent,
+            0f to Color.Black.copy(alpha = 0.8f), 0.3f to Color.Black.copy(alpha = 0.5f), 0.6f to Color.Transparent,
         ))
         drawRect(Brush.verticalGradient(
-            0f to Color.Black.copy(alpha = 0.42f), 0.16f to Color.Transparent, 0.46f to Color.Transparent,
-            0.66f to Color.Black.copy(alpha = 0.6f), 1f to Color.Black.copy(alpha = 0.9f),
+            0f to Color.Black.copy(alpha = 0.5f), 0.18f to Color.Transparent, 0.44f to Color.Transparent,
+            0.64f to Color.Black.copy(alpha = 0.66f), 1f to Color.Black.copy(alpha = 0.94f),
         ))
     }
 }
@@ -109,8 +110,6 @@ private val HeroShadow = Shadow(Color.Black.copy(alpha = 0.45f), blurRadius = 18
 fun HeroInfo(
     item: HistoryItem,
     sourceLabel: String?,
-    count: Int,
-    index: Int,
     enabled: Boolean,
     focusRequester: FocusRequester,
     onFocused: (Boolean) -> Unit,
@@ -118,7 +117,8 @@ fun HeroInfo(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier.widthIn(max = 560.dp)) {
+    // Kept to the darkened left of the cover, clear of what the picture shows.
+    Column(modifier.widthIn(max = 420.dp)) {
         if (sourceLabel != null) {
             BasicText(
                 sourceLabel,
@@ -133,8 +133,8 @@ fun HeroInfo(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 style = Type.LargeTitle.copy(
-                    fontSize = if (big) 52.sp else 30.sp,
-                    lineHeight = if (big) 60.sp else 38.sp,
+                    fontSize = if (big) 46.sp else 26.sp,
+                    lineHeight = if (big) 54.sp else 34.sp,
                     fontWeight = FontWeight.W700,
                     letterSpacing = if (big) 0.06.em else 0.02.em,
                     shadow = HeroShadow,
@@ -149,7 +149,7 @@ fun HeroInfo(
                 focusRequester = focusRequester,
                 focusedScale = 1.06f,
                 onKey = { e ->
-                    if (e.type != KeyEventType.KeyDown || count < 2) return@Pressable false
+                    if (e.type != KeyEventType.KeyDown) return@Pressable false
                     when (e.nativeKeyEvent.keyCode) {
                         NativeKeyEvent.KEYCODE_DPAD_LEFT -> { onStep(-1); true }
                         NativeKeyEvent.KEYCODE_DPAD_RIGHT -> { onStep(1); true }
@@ -184,43 +184,60 @@ fun HeroInfo(
                     BasicText(stringResource(R.string.continue_watching), style = Type.Headline.copy(color = fg, fontSize = 16.sp, letterSpacing = 0.06.em))
                 }
             }
-            if (count > 1) {
-                Row(Modifier.padding(start = 22.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    repeat(count) { i ->
-                        Box(
-                            Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(Color.White.copy(alpha = if (i == index) 0.95f else 0.35f))
-                                .size(if (i == index) 18.dp else 6.dp, 6.dp),
-                        )
-                    }
-                }
-            }
         }
     }
 }
 
-/** Top left: the weather where the TV is, on a small piece of glass. Nothing until it is known. */
+/** Lumen's neutral glass for small chrome over any cover: a light veil and a hairline rim. */
+val LumenGlass = Color.White.copy(alpha = 0.16f)
+val LumenGlassEdge = Color.White.copy(alpha = 0.22f)
+
+/** Top left: the time, then the weather where the TV is, on one chip of glass. */
 @Composable
-fun WeatherChip(modifier: Modifier = Modifier) {
-    val w = Weather.now ?: return
-    val place = Weather.place?.takeIf { it.length <= 12 }
-    val glyph = when (w.kind) {
-        WeatherKind.Clear -> if (w.day) Glyph.Sun else Glyph.Moon
-        WeatherKind.PartlyCloudy -> if (w.day) Glyph.CloudSun else Glyph.Cloud
-        WeatherKind.Cloudy -> Glyph.Cloud
-        WeatherKind.Fog -> Glyph.CloudFog
-        WeatherKind.Rain -> Glyph.CloudRain
-        WeatherKind.Snow -> Glyph.CloudSnow
-        WeatherKind.Thunder -> Glyph.CloudBolt
-    }
+fun TimeWeatherChip(now: java.time.LocalDateTime, modifier: Modifier = Modifier) {
+    val w = Weather.now
     Row(
-        modifier.liquidGlass(17.dp).height(34.dp).padding(horizontal = 14.dp),
+        modifier
+            .clip(RoundedCornerShape(50))
+            .background(LumenGlass)
+            .border(0.75.dp, LumenGlassEdge, RoundedCornerShape(50))
+            .height(34.dp)
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        GlyphIcon(glyph, if (w.kind == WeatherKind.Clear && w.day) Color(0xFFFFD25A) else Color.White, 17.dp)
-        BasicText(listOfNotNull(place, "${w.celsius}°").joinToString(" · "), style = Type.Headline.copy(color = Color.White.copy(alpha = 0.92f)))
+        BasicText(timeText(now), style = Type.Headline.copy(color = Color.White, fontSize = 16.sp))
+        if (w != null) {
+            Box(Modifier.padding(horizontal = 4.dp).size(1.dp, 14.dp).background(Color.White.copy(alpha = 0.35f)))
+            val glyph = when (w.kind) {
+                WeatherKind.Clear -> if (w.day) Glyph.Sun else Glyph.Moon
+                WeatherKind.PartlyCloudy -> if (w.day) Glyph.CloudSun else Glyph.Cloud
+                WeatherKind.Cloudy -> Glyph.Cloud
+                WeatherKind.Fog -> Glyph.CloudFog
+                WeatherKind.Rain -> Glyph.CloudRain
+                WeatherKind.Snow -> Glyph.CloudSnow
+                WeatherKind.Thunder -> Glyph.CloudBolt
+            }
+            GlyphIcon(glyph, if (w.kind == WeatherKind.Clear && w.day) Color(0xFFFFD25A) else Color.White, 16.dp)
+            val place = Weather.place?.takeIf { it.length <= 12 }
+            BasicText(listOfNotNull(place, "${w.celsius}°").joinToString(" "), style = Type.Headline.copy(color = Color.White.copy(alpha = 0.92f)))
+        }
+    }
+}
+
+/** Which title of the history is up: centred over the dock, as tvOS places its page dots. */
+@Composable
+fun HeroPager(count: Int, index: Int, modifier: Modifier = Modifier) {
+    Row(modifier, horizontalArrangement = Arrangement.Center) {
+        repeat(count) { i ->
+            Box(
+                Modifier
+                    .padding(horizontal = 3.dp)
+                    .clip(RoundedCornerShape(50))
+                    .background(Color.White.copy(alpha = if (i == index) 0.95f else 0.35f))
+                    .size(if (i == index) 18.dp else 6.dp, 6.dp),
+            )
+        }
     }
 }
 

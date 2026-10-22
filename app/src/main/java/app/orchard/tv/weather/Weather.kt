@@ -115,6 +115,10 @@ object Weather {
                 putLong("located_at", System.currentTimeMillis())
             }
         }
+        // Places guessed before Lumen named them in Chinese ("Shanghai").
+        if (!prefs.getBoolean("chosen", false)) prefs.getString("place", null)
+            ?.takeIf { p -> p.all { it.code < 128 } }
+            ?.let { prefs.edit { putString("place", localName(it)) } }
         val json = JSONObject(get("https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,weather_code,is_day&timezone=auto"))
         val current = json.getJSONObject("current")
         return WeatherNow(

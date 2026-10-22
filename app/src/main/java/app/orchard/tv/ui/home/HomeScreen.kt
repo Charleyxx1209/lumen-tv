@@ -329,14 +329,21 @@ fun HomeScreen(
                     HeroInfo(
                         item = hero,
                         sourceLabel = vm.apps.firstOrNull { it.packageName == hero.packageName }?.label,
-                        count = history.size,
-                        index = vm.heroIndex,
                         enabled = gridEnabled && moving == null,
                         focusRequester = heroRequester,
                         onFocused = { heroFocused = it; if (it) { pillFocused = false } },
                         onStep = { d -> vm.heroIndex = (vm.heroIndex + d + history.size) % history.size },
                         onClick = { onResume(hero) },
                         modifier = Modifier.padding(start = metrics.margin, top = 150.dp),
+                    )
+                }
+                if (history.size > 1) {
+                    HeroPager(
+                        count = history.size,
+                        index = vm.heroIndex,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .offset { IntOffset(0, (metrics.topRowY - 66.dp).roundToPx()) },
                     )
                 }
                 BasicText(
@@ -418,7 +425,7 @@ fun HomeScreen(
             StatusPill(
                 now = now,
                 network = vm.network,
-                showTime = true,
+                showTime = false,
                 enabled = gridEnabled && moving == null,
                 focusRequester = pillRequester,
                 onFocused = { gained ->
@@ -440,8 +447,9 @@ fun HomeScreen(
             )
         }
 
-        WeatherChip(
-            Modifier
+        TimeWeatherChip(
+            now = now,
+            modifier = Modifier
                 .padding(start = metrics.margin - 14.dp, top = 28.dp)
                 .graphicsLayer { alpha = if (overlay is Overlay.ControlCenter) 0f else 1f },
         )

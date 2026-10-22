@@ -16,7 +16,7 @@ android {
         // Android 5.0. Compose 1.10 and later need 6.0, so the Compose BOM below stays on 1.9.
         minSdk = 21
         targetSdk = 34
-        versionCode = 29
+        versionCode = 30
         versionName = "1.26-lumen.1"
     }
 

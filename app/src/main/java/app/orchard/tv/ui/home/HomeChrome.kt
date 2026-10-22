@@ -15,6 +15,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -256,7 +257,7 @@ fun StatusPill(
     ) { state ->
         LaunchedEffect(state.focused) { onFocused(state.focused) }
         val bg by animateColorAsState(
-            if (state.focused) Palette.Focus else Color.Transparent,
+            if (state.focused) Palette.Focus else LumenGlass,
             tween(160, easing = Motion.EaseOut), label = "pill-bg",
         )
         val fg = if (state.focused) Palette.OnFocus else Color.White.copy(alpha = 0.9f)
@@ -264,10 +265,11 @@ fun StatusPill(
             Modifier
                 .clip(RoundedCornerShape(50))
                 .background(bg)
+                .border(0.75.dp, if (state.focused) Color.Transparent else LumenGlassEdge, RoundedCornerShape(50))
                 .height(34.dp)
                 .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             val glyph = when (network.kind) {
                 NetKind.Wifi -> Glyph.Wifi
@@ -278,7 +280,7 @@ fun StatusPill(
             if (showTime) {
                 BasicText(timeText(now), style = Type.Headline.copy(color = fg))
             }
-            GlyphIcon(Glyph.Switches, fg, 17.dp)
+            GlyphIcon(Glyph.Gear, fg, 17.dp)
         }
     }
 }
