@@ -29,6 +29,9 @@ object Updates {
     // from Aerial's site, which then showed as a newer Lumen (TCL 65V8L, 2026-10-22).
     private const val PREFS = "lumen_updates"
     private val VERSION_URLS = listOf(
+        // Cloudflare Pages on the owner's domain: reachable from China, unlike GitHub and jsDelivr
+        // (both failed from the TCL 65V8L, 2026-10-22). Published by tools/publish-update.sh.
+        "https://lumen.siabuilt.com/version.txt",
         "https://cdn.jsdelivr.net/gh/Charleyxx1209/lumen-tv@main/version.txt",
         "https://raw.githubusercontent.com/Charleyxx1209/lumen-tv/main/version.txt",
     )
@@ -64,7 +67,11 @@ object Updates {
         lastAttempt = now
         scope.launch {
             val latest = withContext(Dispatchers.IO) {
-                VERSION_URLS.firstNotNullOfOrNull { url -> runCatching { read(url).trim().removePrefix("v") }.getOrNull() }
+                VERSION_URLS.firstNotNullOfOrNull { url ->
+                    runCatching { read(url).trim().removePrefix("v") }
+                        .onFailure { Log.w(TAG, "no version from $url: $it") }
+                        .getOrNull()
+                }
                     .let { if (it == null) Result.failure(IllegalStateException("no version source answered")) else Result.success(it) }
                     .onFailure { Log.w(TAG, "could not check for a new version", it) }
                     .getOrNull()
@@ -109,9 +116,14 @@ object Updates {
         downloading = 0f
         scope.launch {
             val apk = withContext(Dispatchers.IO) {
-                runCatching { download("https://github.com/Charleyxx1209/lumen-tv/releases/download/v$version/lumen-${BuildConfig.FLAVOR}.apk", context) }
-                    .onFailure { Log.w(TAG, "could not download $version", it) }
-                    .getOrNull()
+                listOf(
+                    "https://lumen.siabuilt.com/lumen-${BuildConfig.FLAVOR}.apk",
+                    "https://github.com/Charleyxx1209/lumen-tv/releases/download/v$version/lumen-${BuildConfig.FLAVOR}.apk",
+                ).firstNotNullOfOrNull { url ->
+                    runCatching { download(url, context) }
+                        .onFailure { Log.w(TAG, "could not download $version from $url", it) }
+                        .getOrNull()
+                }
             }
             downloading = null
             if (apk == null || !isNewerLumen(context, apk)) { failed = true; return@launch }

@@ -99,16 +99,14 @@ TV=192.168.1.12 tools/install.sh guard
 
 ### 更新
 
-Lumen 每隔几小时检查一次有没有新版本。有新版本时，首页会提示一次，控制中心里也会显示「有新版本」。
+Lumen 每隔几小时检查一次新版本，打开控制中心时也会检查。有新版本时，首页会提示一次，控制中心里会出现「更新到 Lumen x」：
 
-更新方法和安装一样，在电脑上再运行一次（电视上同样要选「同意」）：
+1. 选中它，Lumen 会自己下载新版本（显示下载进度）。
+2. 系统安装界面弹出后，选「安装」。
 
-```bash
-git pull
-TV=192.168.1.12 tools/install.sh guard
-```
+不需要电脑。版本号和安装包同时放在 `lumen.siabuilt.com`（Cloudflare，国内可访问）和 GitHub Releases，优先从前者下载。更新会保留你的应用顺序和设置。
 
-TCL 只接受通过「多屏互动」并在电视上确认过的安装，所以 Lumen 没法在后台自动更新。更新会保留你的应用顺序和设置。
+也可以像安装时一样，在电脑上再运行一次：`git pull && TV=192.168.1.12 tools/install.sh guard`。
 
 ### 还原
 
@@ -145,6 +143,8 @@ Lumen 不会卸载、停用任何 TCL 系统应用，还原后电视和原来一
 export JAVA_HOME=/opt/homebrew/opt/openjdk@17
 ./gradlew assembleGuardRelease
 ```
+
+发新版本：`app/build.gradle.kts` 里 `versionCode` 加 1 并改 `versionName`，`version.txt` 写新版本号，编译后在 GitHub 发 Release（附 `lumen-guard.apk`），再运行 `tools/publish-update.sh` 同步到 lumen.siabuilt.com。电视会在几小时内（或打开控制中心时）提示更新。
 
 Kotlin + Jetpack Compose，界面按 960×540dp 设计。代码结构见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 

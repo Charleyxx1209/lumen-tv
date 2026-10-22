@@ -99,16 +99,14 @@ To install your own build: `BUILD=1 TV=192.168.1.12 tools/install.sh guard` (nee
 
 ### Updating
 
-Lumen checks for a new version every few hours. When there is one, Home says so once and Control Center shows "Lumen x is available".
+Lumen checks for a new version every few hours, and whenever Control Center opens. When there is one, Home says so once and Control Center shows "Update to Lumen x":
 
-Update the same way you installed (agree on the TV again):
+1. Select it; Lumen downloads the new version (with progress).
+2. When the system installer opens, choose Install.
 
-```bash
-git pull
-TV=192.168.1.12 tools/install.sh guard
-```
+No computer needed. The version and APK are published both at `lumen.siabuilt.com` (Cloudflare, reachable from China) and on GitHub Releases; the former is tried first. Updating keeps your app order and settings.
 
-TCL only accepts installs that come through 多屏互动 and are agreed to on the TV, so Lumen cannot update itself in the background. Updating keeps your app order and settings.
+You can also update from a computer, the way you installed: `git pull && TV=192.168.1.12 tools/install.sh guard`.
 
 ### Restore
 
@@ -145,6 +143,8 @@ Other China-market TCL models should work the same way (same install and takeove
 export JAVA_HOME=/opt/homebrew/opt/openjdk@17
 ./gradlew assembleGuardRelease
 ```
+
+To release: raise `versionCode` and `versionName` in `app/build.gradle.kts`, put the version in `version.txt`, build, publish a GitHub release with `lumen-guard.apk`, then run `tools/publish-update.sh` to mirror it to lumen.siabuilt.com. TVs offer the update within a few hours (or when Control Center opens).
 
 Kotlin and Jetpack Compose, laid out on a 960×540 dp canvas. Code structure: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
