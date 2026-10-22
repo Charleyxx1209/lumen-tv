@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Updates.download writes the new APK here; the installer reads it through the provider. -->
+    <cache-path name="updates" path="updates/" />
+</paths>

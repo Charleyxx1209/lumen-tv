@@ -156,6 +156,7 @@ fun ControlCenter(
 private fun MainPage(vm: HomeViewModel, now: LocalDateTime, takeFocus: Boolean, onOpen: (android.content.Intent) -> Unit) {
     val context = LocalContext.current
     val first = remember { FocusRequester() }
+    LaunchedEffect(Unit) { Updates.checkIfStale(soon = true) }
     LaunchedEffect(Unit) {
         if (!takeFocus) return@LaunchedEffect
         withFrameNanos { }
@@ -208,9 +209,17 @@ private fun MainPage(vm: HomeViewModel, now: LocalDateTime, takeFocus: Boolean, 
 
         Updates.available?.let { latest ->
             Spacer(Modifier.height(8.dp))
-            // Lumen cannot install itself on TCL: the update is run from a computer, as the install was.
-            MenuRow(Glyph.Info, stringResource(R.string.cc_update_available, latest), onClick = {})
-            BasicText(stringResource(R.string.cc_update_how), style = Type.Caption, modifier = Modifier.padding(start = 14.dp, top = 2.dp))
+            // Downloads and opens the system installer, which asks on screen.
+            val progress = Updates.downloading
+            MenuRow(
+                Glyph.Info,
+                when {
+                    progress != null -> stringResource(R.string.cc_update_downloading, (progress * 100).toInt())
+                    Updates.failed -> stringResource(R.string.cc_update_failed)
+                    else -> stringResource(R.string.cc_update_available, latest)
+                },
+                onClick = { Updates.install(context) },
+            )
         }
 
         Spacer(Modifier.height(12.dp))

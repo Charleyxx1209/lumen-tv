@@ -55,10 +55,12 @@ object Updates {
         available = prefs.getString("latest", null)?.takeIf { newer(it, current) }
     }
 
-    fun checkIfStale() {
+    /** [soon]: Control Center was opened, the owner may be looking for an update; check if 10 minutes old. */
+    fun checkIfStale(soon: Boolean = false) {
         if (!started) return
         val now = System.currentTimeMillis()
-        if (now - lastAttempt < RETRY_MS || now - prefs.getLong("checked_at", 0) < CHECK_EVERY_MS) return
+        val every = if (soon) RETRY_MS else CHECK_EVERY_MS
+        if (now - lastAttempt < RETRY_MS || now - prefs.getLong("checked_at", 0) < every) return
         lastAttempt = now
         scope.launch {
             val latest = withContext(Dispatchers.IO) {
@@ -87,6 +89,90 @@ object Updates {
             if (d != 0) return d > 0
         }
         return false
+    }
+
+    /** Download progress 0..1 while a new version is being fetched; null otherwise. */
+    var downloading by mutableStateOf<Float?>(null); private set
+
+    /** The last download or install did not work; Control Center offers to try again. */
+    var failed by mutableStateOf(false); private set
+
+    /**
+     * Downloads the new version from this repository's release and hands it to the system installer,
+     * which asks on screen. TCL refuses installs from adb but accepts an app opening its installer
+     * this way (as 当贝 does); install.sh grants Lumen REQUEST_INSTALL_PACKAGES up front.
+     */
+    fun install(context: Context) {
+        val version = available ?: return
+        if (downloading != null) return
+        failed = false
+        downloading = 0f
+        scope.launch {
+            val apk = withContext(Dispatchers.IO) {
+                runCatching { download("https://github.com/Charleyxx1209/lumen-tv/releases/download/v$version/lumen-${BuildConfig.FLAVOR}.apk", context) }
+                    .onFailure { Log.w(TAG, "could not download $version", it) }
+                    .getOrNull()
+            }
+            downloading = null
+            if (apk == null || !isNewerLumen(context, apk)) { failed = true; return@launch }
+            runCatching { openInstaller(context, apk) }
+                .onFailure { Log.w(TAG, "could not open the installer", it); failed = true }
+        }
+    }
+
+    private fun download(url: String, context: Context): java.io.File {
+        val dir = java.io.File(context.cacheDir, "updates").apply { mkdirs() }
+        dir.listFiles()?.forEach { it.delete() }
+        val out = java.io.File(dir, "lumen.apk")
+        val c = URL(url).openConnection() as HttpURLConnection
+        c.connectTimeout = 10_000
+        c.readTimeout = 20_000
+        c.instanceFollowRedirects = true
+        try {
+            val total = c.contentLengthLong.takeIf { it > 0 }
+            c.inputStream.use { input ->
+                out.outputStream().use { output ->
+                    val buf = ByteArray(64 * 1024)
+                    var done = 0L
+                    while (true) {
+                        val n = input.read(buf)
+                        if (n < 0) break
+                        output.write(buf, 0, n)
+                        done += n
+                        if (total != null) scope.launch { downloading = (done.toFloat() / total).coerceIn(0f, 1f) }
+                    }
+                }
+            }
+        } finally {
+            c.disconnect()
+        }
+        return out
+    }
+
+    /** Only a Lumen newer than this one is offered to the installer. */
+    @Suppress("DEPRECATION")
+    private fun isNewerLumen(context: Context, apk: java.io.File): Boolean {
+        val info = context.packageManager.getPackageArchiveInfo(apk.path, 0) ?: return false
+        val code = if (android.os.Build.VERSION.SDK_INT >= 28) info.longVersionCode else info.versionCode.toLong()
+        return info.packageName == context.packageName && code > BuildConfig.VERSION_CODE
+    }
+
+    private fun openInstaller(context: Context, apk: java.io.File) {
+        val pm = context.packageManager
+        if (android.os.Build.VERSION.SDK_INT >= 26 && !pm.canRequestPackageInstalls()) {
+            // Not granted by install.sh (an older install): the system page that allows it.
+            context.startActivity(
+                android.content.Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, android.net.Uri.parse("package:${context.packageName}"))
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+            )
+            return
+        }
+        val uri = androidx.core.content.FileProvider.getUriForFile(context, "${context.packageName}.files", apk)
+        context.startActivity(
+            android.content.Intent(android.content.Intent.ACTION_VIEW)
+                .setDataAndType(uri, "application/vnd.android.package-archive")
+                .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+        )
     }
 
     private fun read(url: String): String {

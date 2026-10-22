@@ -123,7 +123,8 @@
     <string name="all_apps">全部应用</string>
     <string name="my_apps">我的应用</string>
     <string name="minutes_left">剩余 %d 分钟</string>
-    <string name="cc_update_available">有新版本 Lumen %s</string>
-    <string name="cc_update_how">在电脑上再运行一次安装命令即可更新</string>
-    <string name="update_toast">Lumen 有新版本 %s，打开控制中心查看更新方法</string>
+    <string name="cc_update_available">更新到 Lumen %s</string>
+    <string name="update_toast">Lumen 有新版本 %s，可在控制中心更新</string>
+    <string name="cc_update_downloading">正在下载… %d%%</string>
+    <string name="cc_update_failed">下载失败，点此重试</string>
 </resources>

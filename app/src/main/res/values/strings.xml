@@ -124,7 +124,8 @@
     <string name="all_apps">All Apps</string>
     <string name="my_apps">My Apps</string>
     <string name="minutes_left">%d min left</string>
-    <string name="cc_update_available">Lumen %s is available</string>
-    <string name="cc_update_how">On a computer, run the install command again to update</string>
-    <string name="update_toast">Lumen %s is available. Open Control Center for how to update.</string>
+    <string name="cc_update_available">Update to Lumen %s</string>
+    <string name="update_toast">Lumen %s is available. Update it in Control Center.</string>
+    <string name="cc_update_downloading">Downloading… %d%%</string>
+    <string name="cc_update_failed">Download failed. Try again</string>
 </resources>

@@ -18,6 +18,7 @@ adb shell am broadcast -a "$CLS.CONFIG" -n "$PKG/$CLS.guard.ConfigReceiver" --ez
 adb shell cmd notification disallow_listener "$PKG/$CLS.guard.RevivalListener" >/dev/null 2>&1 || true
 adb shell pm revoke "$PKG" android.permission.WRITE_SECURE_SETTINGS >/dev/null 2>&1 || true
 adb shell appops set "$PKG" SYSTEM_ALERT_WINDOW default >/dev/null 2>&1 || true
+adb shell appops set "$PKG" REQUEST_INSTALL_PACKAGES default >/dev/null 2>&1 || true
 adb shell appops set "$PKG" APP_AUTO_START default >/dev/null 2>&1 || true   # TCL only
 adb shell appops set "$PKG" APP_ASSOC_START default >/dev/null 2>&1 || true
 adb shell am force-stop "$PKG"
