@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Lumen</string>
-    <string name="guard_name">Lumen Home Guard</string>
+    <string name="app_name">New TV OS</string>
+    <string name="guard_name">New TV OS Home Guard</string>
     <string name="guard_description">Keeps Aerial as your home screen on TVs that do not let you change it. Reads no screen content.</string>
 
     <string name="greeting_morning">Good morning</string>

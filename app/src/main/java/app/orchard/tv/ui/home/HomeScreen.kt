@@ -313,6 +313,13 @@ fun HomeScreen(
                 )
             }
             val cover = heroCover(hero)
+            // tvOS lets the featured picture drift closer while it waits; once, then it rests.
+            val push = remember { Animatable(1f) }
+            LaunchedEffect(cover) {
+                push.snapTo(1f)
+                if (cover != null && !reduced) push.animateTo(1.06f, tween(14_000, easing = Motion.EaseInOut))
+            }
+            Box(Modifier.fillMaxSize().graphicsLayer { scaleX = push.value; scaleY = push.value }) {
             HomeBackground(
                 // The title being resumed fills the screen; without one, the chosen wallpaper (in
                 // "Follow App" mode, light from the focused app).
@@ -322,6 +329,7 @@ fun HomeScreen(
                 scroll = { scroll.value },
                 collapse = collapsePx,
             )
+            }
 
             Box(Modifier.fillMaxSize().offset { IntOffset(0, -scroll.value.roundToInt()) }) {
                 if (cover != null) HeroShade()
@@ -332,6 +340,7 @@ fun HomeScreen(
                         focusRequester = heroRequester,
                         onFocused = { heroFocused = it; if (it) { pillFocused = false } },
                         onStep = { d -> vm.heroIndex = (vm.heroIndex + d + history.size) % history.size },
+                        onDown = { focusApp(lastFocusedIndex.coerceIn(0, apps.size - 1)) },
                         onClick = { onResume(hero) },
                         modifier = Modifier.padding(start = metrics.margin, top = 150.dp),
                     )

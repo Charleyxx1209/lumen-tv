@@ -113,6 +113,7 @@ fun HeroInfo(
     focusRequester: FocusRequester,
     onFocused: (Boolean) -> Unit,
     onStep: (Int) -> Unit,
+    onDown: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -146,6 +147,9 @@ fun HeroInfo(
                     when (e.nativeKeyEvent.keyCode) {
                         NativeKeyEvent.KEYCODE_DPAD_LEFT -> { onStep(-1); true }
                         NativeKeyEvent.KEYCODE_DPAD_RIGHT -> { onStep(1); true }
+                        // Straight down to the dock: the page dots between are not focusable and
+                        // the focus search could miss the row below a narrow button.
+                        NativeKeyEvent.KEYCODE_DPAD_DOWN -> { onDown(); true }
                         else -> false
                     }
                 },
