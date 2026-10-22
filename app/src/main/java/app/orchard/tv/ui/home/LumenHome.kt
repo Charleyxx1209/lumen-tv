@@ -109,10 +109,13 @@ private val HeroShadow = Shadow(Color.Black.copy(alpha = 0.45f), blurRadius = 18
 /** Room for two lines of title, so the button below never moves as the titles change. */
 private val TitleBox = 92.dp
 
+/** The progress row under the title, always this tall. */
+private val ProgressRow = 24.dp
+
 /**
- * The title being resumed and one Resume button carrying the source app's icon, with how far in
- * beside it. Everything sits at fixed places: the title fills its two-line box from the bottom,
- * so the button stays put whatever the title's length. Left and right on the button page through
+ * The title being resumed, how far in under it, and one Resume button ending in the source app's
+ * icon. Everything sits at fixed places: the title fills its two-line box from the bottom and the
+ * progress row keeps its height, so the button stays put whatever the title. Left and right on the button page through
  * the history; OK resumes.
  */
 @Composable
@@ -148,67 +151,68 @@ fun HeroInfo(
                 )
             }
         }
-        Spacer(Modifier.height(20.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Pressable(
-                onClick = onClick,
-                enabled = enabled,
-                focusRequester = focusRequester,
-                focusedScale = 1.06f,
-                onKey = { e ->
-                    if (e.type != KeyEventType.KeyDown) return@Pressable false
-                    when (e.nativeKeyEvent.keyCode) {
-                        NativeKeyEvent.KEYCODE_DPAD_LEFT -> { onStep(-1); true }
-                        NativeKeyEvent.KEYCODE_DPAD_RIGHT -> { onStep(1); true }
-                        // Straight down to the dock: the page dots between are not focusable and
-                        // the focus search could miss the row below a narrow button.
-                        NativeKeyEvent.KEYCODE_DPAD_DOWN -> { onDown(); true }
-                        else -> false
-                    }
-                },
-            ) { state ->
-                LaunchedEffect(state.focused) { onFocused(state.focused) }
-                val bg by animateColorAsState(
-                    if (state.focused) Palette.Focus else Color.White.copy(alpha = 0.2f),
-                    tween(160, easing = Motion.EaseOut), label = "hero-btn",
-                )
-                val fg = if (state.focused) Palette.OnFocus else Color.White
-                Row(
-                    Modifier
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(bg)
-                        .height(42.dp)
-                        .padding(start = 12.dp, end = 22.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    if (icon != null) {
-                        Image(icon, null, Modifier.size(22.dp).clip(RoundedCornerShape(5.dp)))
-                    }
-                    Canvas(Modifier.size(11.dp)) {
-                        val p = androidx.compose.ui.graphics.Path().apply {
-                            moveTo(size.width * 0.12f, 0f)
-                            lineTo(size.width, size.height / 2f)
-                            lineTo(size.width * 0.12f, size.height)
-                            close()
-                        }
-                        drawPath(p, fg)
-                    }
-                    BasicText(stringResource(R.string.continue_watching), style = Type.Headline.copy(color = fg, fontSize = 16.sp, letterSpacing = 0.06.em))
-                }
-            }
+        // How far in, under the title; its row is kept even when unknown, so the button stays put.
+        Row(Modifier.height(ProgressRow).padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             val progress = item.progress
             val left = item.minutesLeft
             if (progress != null && left != null) {
-                Column(Modifier.padding(start = 18.dp)) {
-                    Box(Modifier.width(120.dp).height(4.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.28f))) {
-                        Box(Modifier.fillMaxHeight().fillMaxWidth(progress.coerceAtLeast(0.03f)).clip(RoundedCornerShape(50)).background(Color.White))
+                Box(Modifier.width(150.dp).height(4.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.28f))) {
+                    Box(Modifier.fillMaxHeight().fillMaxWidth(progress.coerceAtLeast(0.03f)).clip(RoundedCornerShape(50)).background(Color.White))
+                }
+                BasicText(
+                    stringResource(R.string.minutes_left, left),
+                    style = Type.Body.copy(fontSize = 14.sp, color = Color.White.copy(alpha = 0.78f), shadow = HeroShadow),
+                    modifier = Modifier.padding(start = 12.dp),
+                )
+            }
+        }
+        Spacer(Modifier.height(16.dp))
+        Pressable(
+            onClick = onClick,
+            enabled = enabled,
+            focusRequester = focusRequester,
+            focusedScale = 1.06f,
+            onKey = { e ->
+                if (e.type != KeyEventType.KeyDown) return@Pressable false
+                when (e.nativeKeyEvent.keyCode) {
+                    NativeKeyEvent.KEYCODE_DPAD_LEFT -> { onStep(-1); true }
+                    NativeKeyEvent.KEYCODE_DPAD_RIGHT -> { onStep(1); true }
+                    // Straight down to the dock: the page dots between are not focusable and
+                    // the focus search could miss the row below a narrow button.
+                    NativeKeyEvent.KEYCODE_DPAD_DOWN -> { onDown(); true }
+                    else -> false
+                }
+            },
+        ) { state ->
+            LaunchedEffect(state.focused) { onFocused(state.focused) }
+            val bg by animateColorAsState(
+                if (state.focused) Palette.Focus else Color.White.copy(alpha = 0.2f),
+                tween(160, easing = Motion.EaseOut), label = "hero-btn",
+            )
+            val fg = if (state.focused) Palette.OnFocus else Color.White
+            Row(
+                Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(bg)
+                    .height(42.dp)
+                    .padding(start = 20.dp, end = if (icon != null) 12.dp else 22.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Canvas(Modifier.size(11.dp)) {
+                    val p = androidx.compose.ui.graphics.Path().apply {
+                        moveTo(size.width * 0.12f, 0f)
+                        lineTo(size.width, size.height / 2f)
+                        lineTo(size.width * 0.12f, size.height)
+                        close()
                     }
-                    BasicText(
-                        stringResource(R.string.minutes_left, left),
-                        style = Type.Caption.copy(fontSize = 13.sp, color = Color.White.copy(alpha = 0.75f), shadow = HeroShadow),
-                        modifier = Modifier.padding(top = 7.dp),
-                    )
+                    drawPath(p, fg)
+                }
+                BasicText(stringResource(R.string.continue_watching), style = Type.Headline.copy(color = fg, fontSize = 16.sp, letterSpacing = 0.06.em))
+                // Where it resumes: the source app's own icon, after a hairline.
+                if (icon != null) {
+                    Box(Modifier.padding(start = 2.dp).size(1.dp, 18.dp).background(fg.copy(alpha = 0.2f)))
+                    Image(icon, null, Modifier.size(22.dp).clip(RoundedCornerShape(5.dp)))
                 }
             }
         }

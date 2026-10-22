@@ -72,7 +72,7 @@ object TclHistory {
                             title = title,
                             coverUrl = s("videoImgUrl")?.takeIf { it.startsWith("http") }?.let(::fullSize),
                             positionMs = i("currentPosition"),
-                            durationMs = i("duration"),
+                            durationMs = durationMs(i("currentPosition"), i("duration")),
                             receivedAt = s("receivedtime")?.toLongOrNull() ?: 0L,
                             srcApp = src,
                             extras = STRING_EXTRAS.associateWith(::s),
@@ -85,9 +85,21 @@ object TclHistory {
             .distinctBy { it.id }
             // Watched to the end: nothing to resume (tvOS drops these from Up Next too).
             .filterNot { it.durationMs > 0 && it.positionMs >= it.durationMs * 0.97f }
+            // A few seconds in is a misclick or a trailer, not something being watched.
+            .filterNot { it.positionMs < MIN_WATCHED_MS }
             .filter { runCatching { pm.getPackageInfo(it.packageName, 0) }.isSuccess }
             .take(limit)
     }
+
+    private const val MIN_WATCHED_MS = 10_000
+
+    /**
+     * iQIYI (com.tcl.qiyiguo) writes the position in milliseconds but the duration in seconds
+     * ("currentPosition=211000, duration=421"). A duration shorter than the position, that fits
+     * once read as seconds, is taken as seconds.
+     */
+    private fun durationMs(position: Int, duration: Int): Int =
+        if (duration in 1 until position && duration * 1000L >= position) duration * 1000 else duration
 
     /**
      * Titles as the apps wrote them, made fit for a TV: emoji and pictographs go (the TV's fonts
@@ -104,11 +116,16 @@ object TclHistory {
         .trim()
 
     /**
-     * Tencent records its poster at thumbnail size (".../vcover_vt_pic/0/<id>/260", 260×364);
+     * Covers at the size a TV needs. Tencent records its poster at thumbnail size (".../vcover_vt_pic/0/<id>/260", 260×364);
      * the same path ending in /0 is the original (1280×1796). Checked 2026-10-22.
      */
-    private fun fullSize(url: String): String =
-        if ("qpic.cn/vcover_" in url) url.replace(Regex("/\\d+$"), "/0") else url
+    private fun fullSize(url: String): String = when {
+        "qpic.cn/vcover_" in url -> url.replace(Regex("/\\d+$"), "/0")
+        // iQIYI's image server cuts the title's own key art to the size asked for in the name
+        // ("..._m1_352_488.jpg" is the poster; "_1280_720" is landscape art). Checked 2026-10-22.
+        "ptqy.gitv.tv/image/" in url -> url.replace(Regex("_\\d+_\\d+\\.(jpg|png|webp)$"), "_1280_720.$1")
+        else -> url
+    }
 
     private val covers = HashMap<String, Bitmap>()
 
@@ -144,11 +161,12 @@ object TclHistory {
         canvas.drawBitmap(frosted, null, android.graphics.Rect(0, 0, w, h), paint)
         canvas.drawColor(android.graphics.Color.argb(70, 0, 0, 0))
         frosted.recycle()
-        // Between the top bar (to ~12% of the height) and the page dots over the dock (~63%).
-        val ph = h * 0.5f
+        // Below the top bar (to ~12% of the height), above the dock (from ~74%); right of the
+        // centred page dots, as large as that leaves.
+        val ph = h * 0.58f
         val pw = ph * poster.width / poster.height
-        val left = w * 0.885f - pw
-        val top = h * 0.155f
+        val left = w * 0.8f - pw
+        val top = h * 0.14f
         val dst = android.graphics.RectF(left, top, left + pw, top + ph)
         val r = h * 0.022f
         paint.setShadowLayer(h * 0.03f, 0f, h * 0.012f, android.graphics.Color.argb(120, 0, 0, 0))
