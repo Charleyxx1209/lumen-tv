@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">New TV OS</string>
-    <string name="guard_name">New TV OS Home Guard</string>
-    <string name="guard_description">Keeps New TV OS as your home screen on TVs that do not let you change it. Reads no screen content.</string>
+    <string name="app_name">Lumen</string>
+    <string name="guard_name">Lumen Home Guard</string>
+    <string name="guard_description">Keeps Lumen as your home screen on TVs that do not let you change it. Reads no screen content.</string>
 
     <string name="greeting_morning">Good morning</string>
     <string name="greeting_afternoon">Good afternoon</string>
@@ -14,8 +14,8 @@
     <string name="cc_settings">Settings</string>
     <string name="cc_volume">Volume</string>
     <string name="cc_muted">Muted</string>
-    <string name="cc_home_default">New TV OS is your home screen</string>
-    <string name="cc_home_guarded">New TV OS Home Guard is on</string>
+    <string name="cc_home_default">Lumen is your home screen</string>
+    <string name="cc_home_guarded">Lumen Home Guard is on</string>
     <string name="cc_home_not_default">Not the default home screen</string>
     <string name="cc_back">Back</string>
     <string name="cc_no_inputs">No inputs found on this TV</string>
@@ -105,8 +105,8 @@
     <string name="cc_inputs_settings">Input Settings</string>
     <string name="cc_inputs_pin">Show on Home (any number)</string>
     <string name="cc_inputs_boot">When the TV Turns On (one)</string>
-    <string name="cc_inputs_boot_none">Nothing, stay on New TV OS</string>
-    <string name="cc_inputs_boot_hint">Switch to this input when the TV is turned on or wakes from standby. Home still comes back to New TV OS.</string>
+    <string name="cc_inputs_boot_none">Nothing, stay on Lumen</string>
+    <string name="cc_inputs_boot_hint">Switch to this input when the TV is turned on or wakes from standby. Home still comes back to Lumen.</string>
     <string name="cc_inputs_pin_hint">Pinned inputs appear as tiles at the front of Home; select one to switch straight to it. Long-press a tile to move or remove it.</string>
     <string name="menu_unpin_source">Remove from Home</string>
     <string name="st_pin">Parental PIN</string>
@@ -124,4 +124,7 @@
     <string name="all_apps">All Apps</string>
     <string name="my_apps">My Apps</string>
     <string name="minutes_left">%d min left</string>
+    <string name="cc_update_available">Lumen %s is available</string>
+    <string name="cc_update_how">On a computer, run the install command again to update</string>
+    <string name="update_toast">Lumen %s is available. Open Control Center for how to update.</string>
 </resources>

@@ -63,6 +63,7 @@ import app.orchard.tv.BuildConfig
 import app.orchard.tv.HomeViewModel
 import app.orchard.tv.Overlay
 import app.orchard.tv.R
+import app.orchard.tv.update.Updates
 import app.orchard.tv.settings.AerialSettings
 import app.orchard.tv.system.HomeStatus
 import app.orchard.tv.system.NetKind
@@ -204,6 +205,13 @@ private fun MainPage(vm: HomeViewModel, now: LocalDateTime, takeFocus: Boolean, 
         Spacer(Modifier.height(8.dp))
         BrightnessRow(vm)
 
+
+        Updates.available?.let { latest ->
+            Spacer(Modifier.height(8.dp))
+            // Lumen cannot install itself on TCL: the update is run from a computer, as the install was.
+            MenuRow(Glyph.Info, stringResource(R.string.cc_update_available, latest), onClick = {})
+            BasicText(stringResource(R.string.cc_update_how), style = Type.Caption, modifier = Modifier.padding(start = 14.dp, top = 2.dp))
+        }
 
         Spacer(Modifier.height(12.dp))
         val (dot, text) = when (vm.homeStatus) {

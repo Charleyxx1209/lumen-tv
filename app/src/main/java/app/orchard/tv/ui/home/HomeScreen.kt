@@ -432,10 +432,12 @@ fun HomeScreen(
                 enabled = gridEnabled && moving == null,
                 focusRequester = pillRequester,
                 onFocused = { gained ->
-                    // The window hands its first focus to the top-most control; the top row is where Home starts.
+                    // The window hands its first focus to the top-most control; Home starts below it.
                     if (gained) {
-                        if (focusedKey == null) {
-                            if (apps.isNotEmpty()) focusApp(0)
+                        if (focusedKey == null && !heroFocused) {
+                            // Home starts on the title to resume when there is one, else the first app.
+                            if (history.isNotEmpty()) runCatching { heroRequester.requestFocus() }
+                            else if (apps.isNotEmpty()) focusApp(0)
                         } else {
                             pillFocused = true
                         }
