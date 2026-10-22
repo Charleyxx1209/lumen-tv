@@ -49,7 +49,7 @@ const val DOCK_SIZE = 5
 const val COVER_W = 1280
 const val COVER_H = 720
 
-enum class CcPage { Main, Inputs, InputSettings, Update }
+enum class CcPage { Main, Inputs, InputSettings }
 
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val context get() = getApplication<Application>()

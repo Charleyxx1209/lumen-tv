@@ -81,7 +81,6 @@ import app.orchard.tv.ui.theme.GlyphIcon
 import app.orchard.tv.ui.theme.Motion
 import app.orchard.tv.ui.theme.Palette
 import app.orchard.tv.ui.theme.Type
-import app.orchard.tv.update.Updates
 import app.orchard.tv.wallpaper.PhoneServer
 import java.time.LocalDateTime
 
@@ -103,7 +102,6 @@ fun ControlCenter(
             CcPage.Main -> onClose()
             CcPage.Inputs -> vm.overlay = Overlay.ControlCenter(CcPage.Main)
             CcPage.InputSettings -> vm.overlay = Overlay.ControlCenter(CcPage.Inputs)
-            CcPage.Update -> vm.overlay = Overlay.ControlCenter(CcPage.Main)
         }
     }
 
@@ -146,7 +144,6 @@ fun ControlCenter(
                         CcPage.Main -> MainPage(vm, now, visible, onOpen)
                         CcPage.Inputs -> InputsPage(vm, visible, onOpen)
                         CcPage.InputSettings -> InputSettingsPage(vm, visible)
-                        CcPage.Update -> UpdatePage(vm, visible)
                     }
                 }
             }
@@ -207,20 +204,6 @@ private fun MainPage(vm: HomeViewModel, now: LocalDateTime, takeFocus: Boolean, 
         Spacer(Modifier.height(8.dp))
         BrightnessRow(vm)
 
-        Spacer(Modifier.height(8.dp))
-        // How Home looks (wallpaper, screensaver, focus style, hidden apps, weather) lives in one place.
-        MenuRow(
-            Glyph.Photo,
-            stringResource(R.string.cc_personalize),
-            onClick = { vm.overlay = Overlay.Wallpaper },
-        )
-        Updates.available?.let { latest ->
-            MenuRow(
-                Glyph.Info,
-                stringResource(R.string.cc_update_available, latest),
-                onClick = { vm.overlay = Overlay.ControlCenter(CcPage.Update) },
-            )
-        }
 
         Spacer(Modifier.height(12.dp))
         val (dot, text) = when (vm.homeStatus) {
@@ -232,46 +215,7 @@ private fun MainPage(vm: HomeViewModel, now: LocalDateTime, takeFocus: Boolean, 
             Box(Modifier.size(7.dp).clip(CircleShape).background(dot))
             Spacer(Modifier.width(8.dp))
             BasicText(text, style = Type.Caption, modifier = Modifier.weight(1f))
-            BasicText("Aerial ${Updates.current}", style = Type.Caption.copy(color = Palette.TertiaryLabel), modifier = Modifier.padding(end = 14.dp))
-        }
-    }
-}
-
-/**
- * How to move to the new version. Aerial does not install it itself: TCL only takes installs from
- * its own channels and Xiaomi asks on screen, so the install command (or an AI agent running it)
- * stays the one way that works everywhere, and it keeps every setting.
- */
-@Composable
-private fun UpdatePage(vm: HomeViewModel, takeFocus: Boolean) {
-    val context = LocalContext.current
-    val back = remember { FocusRequester() }
-    LaunchedEffect(Unit) {
-        if (!takeFocus) return@LaunchedEffect
-        withFrameNanos { }
-        runCatching { back.requestFocus() }
-    }
-    val ip = remember { PhoneServer.lanAddress(context) } ?: "<IP>"
-    val guard = if (BuildConfig.FLAVOR == "guard") " -s guard" else ""
-    Column {
-        MenuRow(Glyph.ChevronLeft, stringResource(R.string.cc_update_title, Updates.available ?: Updates.current), focusRequester = back, onClick = {
-            vm.overlay = Overlay.ControlCenter(CcPage.Main)
-        })
-        Column(Modifier.padding(horizontal = 14.dp)) {
-            Spacer(Modifier.height(10.dp))
-            BasicText(stringResource(R.string.cc_update_current, Updates.current), style = Type.Caption)
-            Spacer(Modifier.height(14.dp))
-            BasicText(stringResource(R.string.cc_update_command), style = Type.Body)
-            Spacer(Modifier.height(8.dp))
-            BasicText(
-                "curl -fsSL https://aerial.qust.me/install.sh | KEEP_ADB=1 TV=$ip bash$guard",
-                style = Type.Caption.copy(color = Palette.Label),
-                modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Palette.Fill).padding(10.dp),
-            )
-            Spacer(Modifier.height(14.dp))
-            BasicText(stringResource(R.string.cc_update_agent, ip), style = Type.Body)
-            Spacer(Modifier.height(10.dp))
-            BasicText(stringResource(R.string.cc_update_keeps), style = Type.Caption)
+            BasicText(app.orchard.tv.BuildConfig.VERSION_NAME.substringBefore("-"), style = Type.Caption.copy(color = Palette.TertiaryLabel), modifier = Modifier.padding(end = 14.dp))
         }
     }
 }

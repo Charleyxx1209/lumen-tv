@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="guard_name">New TV OS 桌面守护</string>
-    <string name="guard_description">在不允许更换桌面的电视上，让 Aerial 保持为主屏幕。不会读取任何屏幕内容。</string>
+    <string name="guard_description">在不允许更换桌面的电视上，让 New TV OS 保持为主屏幕。不会读取任何屏幕内容。</string>
 
     <string name="greeting_morning">早上好</string>
     <string name="greeting_afternoon">下午好</string>
@@ -13,8 +13,8 @@
     <string name="cc_settings">设置</string>
     <string name="cc_volume">音量</string>
     <string name="cc_muted">已静音</string>
-    <string name="cc_home_default">Aerial 是默认桌面</string>
-    <string name="cc_home_guarded">桌面守护已开启</string>
+    <string name="cc_home_default">New TV OS 是默认桌面</string>
+    <string name="cc_home_guarded">New TV OS 桌面守护已开启</string>
     <string name="cc_home_not_default">尚未设为默认桌面</string>
     <string name="cc_back">返回</string>
     <string name="cc_no_inputs">这台电视没有可用的信号源</string>
@@ -44,7 +44,6 @@
     <string name="launch_failed">无法打开%1$s</string>
     <string name="unavailable">此电视不支持</string>
     <string name="cc_brightness">亮度</string>
-    <string name="cc_personalize">个性化</string>
     <string name="wp_title">个性化</string>
     <string name="wp_wallpaper">壁纸</string>
     <string name="wp_weather">天气</string>
@@ -105,16 +104,10 @@
     <string name="cc_inputs_settings">信号源设置</string>
     <string name="cc_inputs_pin">显示在主屏幕（可多选）</string>
     <string name="cc_inputs_boot">开机时打开（选一个）</string>
-    <string name="cc_inputs_boot_none">不打开，停在 Aerial</string>
-    <string name="cc_inputs_boot_hint">电视开机或从待机唤醒时，直接切到这个信号源。按主页键仍会回到 Aerial。</string>
+    <string name="cc_inputs_boot_none">不打开，停在 New TV OS</string>
+    <string name="cc_inputs_boot_hint">电视开机或从待机唤醒时，直接切到这个信号源。按主页键仍会回到 New TV OS。</string>
     <string name="cc_inputs_pin_hint">选中的信号源会作为磁贴出现在主屏幕最前面，按一下直接切换过去。长按磁贴可以移动或移除。</string>
     <string name="menu_unpin_source">从主屏幕移除</string>
-    <string name="cc_update_available">有新版本 %s</string>
-    <string name="cc_update_title">Aerial %s</string>
-    <string name="cc_update_current">这台电视上是 Aerial %s。</string>
-    <string name="cc_update_command">在同一网络的电脑上再运行一次安装命令就能升级：</string>
-    <string name="cc_update_agent">也可以对 AI 助手说：「按 aerial.qust.me/agent.md，把电视 %s 上的 Aerial 升级到最新版。」</string>
-    <string name="cc_update_keeps">App、排列顺序、壁纸和设置都会保留。</string>
     <string name="st_pin">家长密码</string>
     <string name="st_pin_off">关闭</string>
     <string name="st_pin_on">开启</string>
