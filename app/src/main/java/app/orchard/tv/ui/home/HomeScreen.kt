@@ -364,6 +364,7 @@ fun HomeScreen(
                         onFocused = { heroFocused = it; if (it) { pillFocused = false } },
                         onStep = { d -> vm.heroIndex = (vm.heroIndex + d + history.size) % history.size },
                         onDown = { focusApp(lastFocusedIndex.coerceIn(0, apps.size - 1)) },
+                        onUp = { runCatching { pillRequester.requestFocus() } },
                         onClick = { onResume(hero) },
                         modifier = Modifier.padding(start = metrics.margin, top = 150.dp),
                     )
