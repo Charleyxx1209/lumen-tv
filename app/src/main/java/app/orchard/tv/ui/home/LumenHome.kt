@@ -60,7 +60,6 @@ import app.orchard.tv.history.TclHistory
 import app.orchard.tv.ui.components.Pressable
 import app.orchard.tv.ui.components.consumeTaps
 import app.orchard.tv.ui.components.dismissOnTap
-import app.orchard.tv.ui.components.liquidGlass
 import app.orchard.tv.ui.theme.Glyph
 import app.orchard.tv.ui.theme.GlyphIcon
 import app.orchard.tv.ui.theme.Motion
@@ -185,6 +184,9 @@ fun HeroInfo(
     }
 }
 
+/** The All Apps sheet: the same neutral glass, dense enough to read rows of labels over a cover. */
+val SheetGlass = Color(0xD92A2A2E)
+
 /** Lumen's neutral glass for small chrome over any cover: a light veil and a hairline rim. */
 val LumenGlass = Color.White.copy(alpha = 0.16f)
 val LumenGlassEdge = Color.White.copy(alpha = 0.22f)
@@ -260,13 +262,17 @@ fun AllAppsSheet(
         exit = fadeOut(tween(150)) + scaleOut(tween(150, easing = Motion.EaseOut), targetScale = 0.97f),
         modifier = Modifier.fillMaxSize(),
     ) {
-        Box(Modifier.fillMaxSize().dismissOnTap(onDismiss).background(Color.Black.copy(alpha = 0.45f)), contentAlignment = Alignment.Center) {
+        Box(Modifier.fillMaxSize().dismissOnTap(onDismiss).background(Color.Black.copy(alpha = 0.55f)), contentAlignment = Alignment.Center) {
+            // Neutral glass, as on Home's chips: a cool grey veil and a hairline rim, never tinted
+            // by whatever wallpaper Aerial last chose.
             Column(
                 Modifier
                     .width(820.dp)
                     .consumeTaps()
                     .heightIn(max = 480.dp)
-                    .liquidGlass(28.dp)
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(SheetGlass)
+                    .border(0.75.dp, LumenGlassEdge, RoundedCornerShape(28.dp))
                     .padding(28.dp),
             ) {
                 BasicText(stringResource(R.string.all_apps), style = Type.LargeTitle, modifier = Modifier.padding(bottom = 18.dp))
@@ -277,7 +283,7 @@ fun AllAppsSheet(
                         .padding(horizontal = 8.dp, vertical = 8.dp),
                 ) {
                     apps.chunked(5).forEachIndexed { r, row ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.padding(bottom = 18.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(20.dp), modifier = Modifier.padding(bottom = 22.dp)) {
                             row.forEachIndexed { c, app ->
                                 Pressable(
                                     onClick = { onLaunch(app, null) },
@@ -286,10 +292,10 @@ fun AllAppsSheet(
                                 ) { state ->
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         MiniTile(app, state.focused, Modifier.size(132.dp, 74.dp))
-                                        Spacer(Modifier.height(8.dp))
+                                        Spacer(Modifier.height(10.dp))
                                         BasicText(
                                             app.label, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                                            style = Type.Caption.copy(color = if (state.focused) Palette.Label else Palette.SecondaryLabel),
+                                            style = Type.Body.copy(fontSize = 15.sp, color = if (state.focused) Palette.Label else Color.White.copy(alpha = 0.7f)),
                                             modifier = Modifier.width(132.dp),
                                         )
                                     }
