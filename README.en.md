@@ -123,6 +123,12 @@ Lumen never uninstalls or disables TCL's system apps; after a restore the TV is 
 - **No 多屏互动 prompt**: make sure the TV is not in its screensaver (press a key first), then run the install again.
 - **What you just watched is not first**: give Home 2–3 seconds; some apps write their history only as they stop.
 
+## Known limitations
+
+- When a video is opened from Bilibili's own History page, Bilibili sometimes does not write it to TCL's watch history (or writes another video), so Continue Watching does not update. Opened from Lumen's Resume, it works.
+- Continue Watching for Youku and Mango TV is not verified.
+- Brightness is run by TCL's own TV service: Brightness in Control Center opens TCL's picture settings rather than a slider.
+
 ## Tested TVs
 
 | Model | System | Install | Home takeover | Start at boot | Wake from standby | Continue watching |
