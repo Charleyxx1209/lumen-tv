@@ -37,6 +37,7 @@ object Updates {
     )
     private const val CHECK_EVERY_MS = 3 * 60 * 60 * 1000L
     private const val RETRY_MS = 10 * 60 * 1000L
+    private const val SOON_MS = 60 * 1000L
 
     /** This build's version, e.g. "1.0" (the "-lumen" and "-guard" left off). */
     val current: String = BuildConfig.VERSION_NAME.substringBefore('-')
@@ -58,12 +59,16 @@ object Updates {
         available = prefs.getString("latest", null)?.takeIf { newer(it, current) }
     }
 
-    /** [soon]: Control Center was opened, the owner may be looking for an update; check if 10 minutes old. */
+    /**
+     * [soon]: Control Center was opened, the owner may well be looking for an update; check if the
+     * last check is a minute old. Ten minutes hid a release made just after Lumen started
+     * (TCL 65V8L, 2026-10-22).
+     */
     fun checkIfStale(soon: Boolean = false) {
         if (!started) return
         val now = System.currentTimeMillis()
-        val every = if (soon) RETRY_MS else CHECK_EVERY_MS
-        if (now - lastAttempt < RETRY_MS || now - prefs.getLong("checked_at", 0) < every) return
+        val gap = if (soon) SOON_MS else RETRY_MS
+        if (now - lastAttempt < gap || now - prefs.getLong("checked_at", 0) < if (soon) SOON_MS else CHECK_EVERY_MS) return
         lastAttempt = now
         scope.launch {
             val latest = withContext(Dispatchers.IO) {
