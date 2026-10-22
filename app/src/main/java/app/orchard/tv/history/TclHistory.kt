@@ -65,7 +65,7 @@ object TclHistory {
                     while (c.moveToNext()) {
                         val pkg = s("packageName") ?: continue
                         val src = s("srcApp") ?: continue
-                        val title = (s("videoName") ?: s("episodeName"))?.trim()?.takeIf { it.isNotEmpty() } ?: continue
+                        val title = (s("videoName") ?: s("episodeName"))?.let(::cleanTitle)?.takeIf { it.isNotEmpty() } ?: continue
                         add(HistoryItem(
                             id = "$pkg/${s("videoId")}",
                             packageName = pkg,
@@ -88,6 +88,20 @@ object TclHistory {
             .filter { runCatching { pm.getPackageInfo(it.packageName, 0) }.isSuccess }
             .take(limit)
     }
+
+    /**
+     * Titles as the apps wrote them, made fit for a TV: emoji and pictographs go (the TV's fonts
+     * draw many as tofu, and tvOS titles carry none), as do the "??" left where an app stored an
+     * emoji its database could not hold ("Vlog??30+…" from Bilibili), stray format characters, and
+     * doubled spaces.
+     */
+    internal fun cleanTitle(raw: String): String = raw
+        .replace(Regex("\\?{2,}"), " ")
+        .replace(Regex("[\\x{1F000}-\\x{1FAFF}\\x{2600}-\\x{27BF}\\x{2B00}-\\x{2BFF}\\x{FE00}-\\x{FE0F}\\x{200B}-\\x{200F}\\x{2060}-\\x{206F}\\x{E0000}-\\x{E007F}\\x{FFFD}\\x{20E3}]"), "")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+        .trim('|', '-', '·', '丨')
+        .trim()
 
     /**
      * Tencent records its poster at thumbnail size (".../vcover_vt_pic/0/<id>/260", 260×364);
@@ -120,7 +134,7 @@ object TclHistory {
     /**
      * A portrait poster (Tencent) cropped to fill a wide screen would lose most of it. Instead the
      * poster, blurred and dimmed, fills the screen, and the poster itself stands on the right,
-     * above the dock, clear of the title on the left.
+     * below the top bar and above the dock, clear of the title on the left.
      */
     private fun posterScene(poster: Bitmap, w: Int, h: Int): Bitmap {
         val frosted = Images.frost(Images.cover(poster, 320, 180))
@@ -130,10 +144,11 @@ object TclHistory {
         canvas.drawBitmap(frosted, null, android.graphics.Rect(0, 0, w, h), paint)
         canvas.drawColor(android.graphics.Color.argb(70, 0, 0, 0))
         frosted.recycle()
-        val ph = h * 0.6f
+        // Between the top bar (to ~12% of the height) and the page dots over the dock (~63%).
+        val ph = h * 0.5f
         val pw = ph * poster.width / poster.height
-        val left = w * 0.9f - pw
-        val top = h * 0.09f
+        val left = w * 0.885f - pw
+        val top = h * 0.155f
         val dst = android.graphics.RectF(left, top, left + pw, top + ph)
         val r = h * 0.022f
         paint.setShadowLayer(h * 0.03f, 0f, h * 0.012f, android.graphics.Color.argb(120, 0, 0, 0))

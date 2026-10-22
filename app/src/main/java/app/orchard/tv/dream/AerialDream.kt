@@ -79,6 +79,7 @@ class AerialDream : DreamService(), LifecycleOwner, SavedStateRegistryOwner {
 
     override fun onDreamingStarted() {
         super.onDreamingStarted()
+        active = this
         registry.currentState = Lifecycle.State.RESUMED
     }
 
@@ -87,10 +88,23 @@ class AerialDream : DreamService(), LifecycleOwner, SavedStateRegistryOwner {
         // detached first (DESTROYED), and only then is the dream stopped. Moving back to CREATED
         // from there throws and took Aerial down on every wake (TCL MT5879).
         if (registry.currentState.isAtLeast(Lifecycle.State.CREATED)) registry.currentState = Lifecycle.State.CREATED
+        if (active === this) active = null
         super.onDreamingStopped()
     }
 
+    companion object {
+        /** The dream on screen, if any. Same process as Home Guard. */
+        @Volatile private var active: AerialDream? = null
+
+        /**
+         * Ends the dream. Home Guard takes the Home key before the system sees it, so the dream
+         * never hears it and stayed up while Back worked (TCL 65V8L, 2026-10-22).
+         */
+        fun wake(): Boolean = active?.let { it.finish(); true } ?: false
+    }
+
     override fun onDetachedFromWindow() {
+        if (active === this) active = null
         registry.currentState = Lifecycle.State.DESTROYED
         super.onDetachedFromWindow()
     }

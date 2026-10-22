@@ -292,6 +292,7 @@ class MainActivity : ComponentActivity() {
         if (intent.hasCategory(Intent.CATEGORY_HOME) || intent.action == Intent.ACTION_MAIN) {
             // Since 1.11 Home Guard answers Home from an app by bringing Aerial back with this same
             // intent, so the intent alone cannot tell Home-on-Home from coming back from an app.
+            hideScreensaver()
             vm.onHomePressed(resetFocus = !openedAppSinceHome)
             openedAppSinceHome = false
         }

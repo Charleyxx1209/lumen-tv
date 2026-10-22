@@ -245,6 +245,12 @@ class HomeGuardService : AccessibilityService() {
     override fun onKeyEvent(event: KeyEvent): Boolean {
         if (!GuardSetup.isUserUnlocked(this)) return false
         if (event.keyCode != KeyEvent.KEYCODE_HOME) return false
+        // Home over the screensaver: end it and go Home, whoever is the system Home.
+        if (event.action == KeyEvent.ACTION_UP && !event.isCanceled && app.orchard.tv.dream.AerialDream.wake()) {
+            Log.i(TAG, "Home ended the screensaver")
+            goHome()
+            return true
+        }
         if (isDefaultHome()) return false
         if (event.action == KeyEvent.ACTION_UP && !event.isCanceled) {
             Log.i(TAG, "Home key taken before the system saw it")
