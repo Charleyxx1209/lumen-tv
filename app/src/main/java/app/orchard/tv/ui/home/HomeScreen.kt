@@ -328,7 +328,6 @@ fun HomeScreen(
                 if (hero != null) {
                     HeroInfo(
                         item = hero,
-                        sourceLabel = vm.apps.firstOrNull { it.packageName == hero.packageName }?.label,
                         enabled = gridEnabled && moving == null,
                         focusRequester = heroRequester,
                         onFocused = { heroFocused = it; if (it) { pillFocused = false } },
@@ -346,11 +345,6 @@ fun HomeScreen(
                             .offset { IntOffset(0, (metrics.topRowY - 66.dp).roundToPx()) },
                     )
                 }
-                BasicText(
-                    stringResource(R.string.my_apps),
-                    style = Type.Title.copy(color = Color.White.copy(alpha = 0.92f)),
-                    modifier = Modifier.offset { IntOffset(metrics.margin.roundToPx(), (metrics.topRowY - 34.dp).roundToPx()) },
-                )
 
                 apps.forEachIndexed { index, app ->
                     key(app.key) {

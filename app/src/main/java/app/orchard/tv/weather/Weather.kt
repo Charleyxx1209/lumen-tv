@@ -117,7 +117,7 @@ object Weather {
         }
         // Places guessed before Lumen named them in Chinese ("Shanghai").
         if (!prefs.getBoolean("chosen", false)) prefs.getString("place", null)
-            ?.takeIf { p -> p.all { it.code < 128 } }
+            ?.takeIf { p -> java.util.Locale.getDefault().language == "zh" && p.all { it.code < 128 } }
             ?.let { prefs.edit { putString("place", localName(it)) } }
         val json = JSONObject(get("https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,weather_code,is_day&timezone=auto"))
         val current = json.getJSONObject("current")
@@ -152,10 +152,10 @@ object Weather {
         return true
     }
 
-    /** ipinfo names cities in English ("Shanghai"); Open-Meteo's geocoder knows the Chinese name. */
+    /** ipinfo names cities in English ("Shanghai"); Open-Meteo's geocoder names them in the TV's language. */
     private fun localName(city: String): String = runCatching {
         val q = java.net.URLEncoder.encode(city, "UTF-8")
-        JSONObject(get("https://geocoding-api.open-meteo.com/v1/search?name=$q&count=1&language=zh&format=json"))
+        JSONObject(get("https://geocoding-api.open-meteo.com/v1/search?name=$q&count=1&language=${java.util.Locale.getDefault().language}&format=json"))
             .getJSONArray("results").getJSONObject(0).optString("name").ifBlank { city }
     }.getOrDefault(city)
 

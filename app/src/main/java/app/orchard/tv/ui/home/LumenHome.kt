@@ -103,13 +103,12 @@ fun HeroShade() {
 private val HeroShadow = Shadow(Color.Black.copy(alpha = 0.45f), blurRadius = 18f)
 
 /**
- * The title being resumed, with its app and a single Resume button: the only thing on the cover.
+ * The title being resumed and a single Resume button: the only thing on the cover.
  * Left and right on the button page through the history; OK resumes.
  */
 @Composable
 fun HeroInfo(
     item: HistoryItem,
-    sourceLabel: String?,
     enabled: Boolean,
     focusRequester: FocusRequester,
     onFocused: (Boolean) -> Unit,
@@ -119,12 +118,6 @@ fun HeroInfo(
 ) {
     // Kept to the darkened left of the cover, clear of what the picture shows.
     Column(modifier.widthIn(max = 420.dp)) {
-        if (sourceLabel != null) {
-            BasicText(
-                sourceLabel,
-                style = Type.Headline.copy(color = Color.White.copy(alpha = 0.8f), letterSpacing = 0.04.em, shadow = HeroShadow),
-            )
-        }
         Crossfade(targetState = item, animationSpec = tween(260, easing = Motion.EaseOut), label = "hero-title") { it ->
             // Bilibili titles run long; short ones get the big display size.
             val big = it.title.length <= 10
