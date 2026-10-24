@@ -32,11 +32,12 @@ No ads, no recommendation feed. Tested feature by feature on a China-market TCL 
 
 - Six tiles: by default **Bilibili, Tencent Video, iQIYI, Youku, Mango TV**, then All Apps.
 - **Hold OK to reorder**; the order is kept.
-- Every other app (TCL's own tools included) is under All Apps. Nothing is uninstalled or disabled.
+- Every other app you installed follows those five; past six, the row scrolls sideways with the focus.
+- TCL's own system apps are under All Apps. Nothing is uninstalled or disabled.
 
 ### Top bar and Control Center
 
-- Top left: time and weather; the city follows the TV's system language.
+- Top left: time and weather; the city follows the TV's system language. It is found from the network by default; in China IP location often lands on the provincial capital or a neighbouring city, so pick yours under Control Center → Weather city.
 - Top right: network and settings. Select it for Control Center: inputs, network, system settings, volume, brightness.
 
 <p align="center"><img src="docs/screenshots/control-center.jpg" width="60%" alt="Control Center"></p>

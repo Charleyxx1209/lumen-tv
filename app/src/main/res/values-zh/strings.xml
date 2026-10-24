@@ -127,4 +127,6 @@
     <string name="update_toast">Lumen 有新版本 %s，可在控制中心更新</string>
     <string name="cc_update_downloading">正在下载… %d%%</string>
     <string name="cc_update_failed">下载失败，点此重试</string>
+    <string name="cc_city">天气城市</string>
+    <string name="cc_city_auto">自动定位</string>
 </resources>

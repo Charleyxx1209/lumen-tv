@@ -111,14 +111,14 @@ object Weather {
             lon = loc[1].toFloat()
             prefs.edit {
                 putFloat("lat", lat); putFloat("lon", lon)
-                putString("place", ip.optString("city").ifBlank { null }?.let(::localName))
+                putString("place", ip.optString("city").ifBlank { null }?.let { localName(it, ip.optString("country"), ip.optString("region")) })
                 putLong("located_at", System.currentTimeMillis())
             }
         }
         // Places guessed before Lumen named them in Chinese ("Shanghai").
         if (!prefs.getBoolean("chosen", false)) prefs.getString("place", null)
             ?.takeIf { p -> java.util.Locale.getDefault().language == "zh" && p.all { it.code < 128 } }
-            ?.let { prefs.edit { putString("place", localName(it)) } }
+            ?.let { prefs.edit { putString("place", localName(it, "", "")) } }
         val json = JSONObject(get("https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,weather_code,is_day&timezone=auto"))
         val current = json.getJSONObject("current")
         return WeatherNow(
@@ -152,11 +152,24 @@ object Weather {
         return true
     }
 
-    /** ipinfo names cities in English ("Shanghai"); Open-Meteo's geocoder names them in the TV's language. */
-    private fun localName(city: String): String = runCatching {
+    /**
+     * ipinfo names cities in English ("Shanghai"); Open-Meteo's geocoder names them in the TV's
+     * language. Pinyin is ambiguous ("Suzhou" is 苏州 in Jiangsu and 宿州 in Anhui), so a match must be
+     * in ipinfo's country and, when known, its province; otherwise the English name stays.
+     */
+    private fun localName(city: String, country: String, region: String): String = runCatching {
         val q = java.net.URLEncoder.encode(city, "UTF-8")
-        JSONObject(get("https://geocoding-api.open-meteo.com/v1/search?name=$q&count=1&language=${java.util.Locale.getDefault().language}&format=json"))
-            .getJSONArray("results").getJSONObject(0).optString("name").ifBlank { city }
+        val results = JSONObject(get("https://geocoding-api.open-meteo.com/v1/search?name=$q&count=10&language=en&format=json"))
+            .getJSONArray("results")
+        val pick = (0 until results.length()).map { results.getJSONObject(it) }.firstOrNull { r ->
+            (country.isEmpty() || r.optString("country_code").equals(country, true)) &&
+                (region.isEmpty() || r.optString("admin1").contains(region.substringBefore(' '), true))
+        } ?: return@runCatching city
+        // The same place, by id, named in the TV's language.
+        val local = JSONObject(get("https://geocoding-api.open-meteo.com/v1/search?name=$q&count=10&language=${java.util.Locale.getDefault().language}&format=json"))
+            .getJSONArray("results")
+        (0 until local.length()).map { local.getJSONObject(it) }.firstOrNull { it.optLong("id") == pick.optLong("id") }
+            ?.optString("name")?.ifBlank { null } ?: city
     }.getOrDefault(city)
 
     /** Back to guessing the place from the network. */

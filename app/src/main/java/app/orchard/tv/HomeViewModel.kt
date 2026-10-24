@@ -43,13 +43,14 @@ sealed interface Overlay {
     data class Pin(val mode: PinMode, val onDone: () -> Unit) : Overlay
 }
 
-const val DOCK_SIZE = 5
+/** The streaming apps Lumen is made for, docked even when they came with the TV (TCL 65V8L). */
+val DOCK_APPS = setOf("com.xiaodianshi.tv.yst", "com.ktcp.csvideo", "com.tcl.qiyiguo", "com.cibn.tv", "com.hunantv.market")
 
 /** Covers are decoded at 720p: sharp enough under the shade, small enough for a 2 GB TV. */
 const val COVER_W = 1280
 const val COVER_H = 720
 
-enum class CcPage { Main, Inputs, InputSettings }
+enum class CcPage { Main, Inputs, InputSettings, City }
 
 class HomeViewModel(app: Application) : AndroidViewModel(app) {
     private val context get() = getApplication<Application>()
@@ -60,10 +61,14 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
     var hiddenApps by mutableStateOf<List<AppEntry>>(emptyList()); private set
     var loaded by mutableStateOf(false); private set
 
-    /** Lumen's dock: the first [DOCK_SIZE] apps in the owner's order, then the All Apps tile. */
-    val dock: List<AppEntry> get() = apps.take(DOCK_SIZE) + allApps
-    /** Everything past the dock, shown behind the All Apps tile. */
-    val moreApps: List<AppEntry> get() = apps.drop(DOCK_SIZE)
+    /**
+     * Lumen's dock, in the owner's order: the streaming apps it is made for, then every app the
+     * owner installed (removable), then the All Apps tile. Only the TV's own apps wait behind it.
+     */
+    val dock: List<AppEntry> get() = apps.filter(::inDock) + allApps
+    /** The TV's own apps, behind the All Apps tile. */
+    val moreApps: List<AppEntry> get() = apps.filterNot(::inDock)
+    private fun inDock(app: AppEntry) = app.removable || app.packageName in DOCK_APPS
     private val allApps by lazy { allAppsEntry(context) }
 
     /** What the owner was watching, newest first (TCL's launcher history); empty elsewhere. */
@@ -239,16 +244,15 @@ class HomeViewModel(app: Application) : AndroidViewModel(app) {
         movingKey = key
     }
 
-    /** Moves the app being moved by [delta] slots in the visible grid. */
+    /** Moves the app being moved by [delta] places along the dock (All Apps stays last). */
     fun moveBy(delta: Int) {
         val key = movingKey ?: return
-        val from = apps.indexOfFirst { it.key == key }
+        val row = apps.filter(::inDock)
+        val from = row.indexOfFirst { it.key == key }
         if (from < 0) return
-        // Dock apps move only within the dock.
-        val last = if (from < DOCK_SIZE) minOf(DOCK_SIZE, apps.size) - 1 else apps.lastIndex
-        val to = (from + delta).coerceIn(if (from < DOCK_SIZE) 0 else DOCK_SIZE, last)
+        val to = (from + delta).coerceIn(0, row.lastIndex)
         if (to == from) return
-        store.move(key, apps[to].key)
+        store.move(key, row[to].key)
         arrange()
     }
 

@@ -104,7 +104,8 @@ private class GridMetrics(screenW: Dp, screenH: Dp, oneRow: Boolean) {
     val restY = screenH * 0.37f
     val screenH = screenH
 
-    fun slot(index: Int) = Pair(margin + pitchX * (index % COLUMNS), topRowY + pitchY * (index / COLUMNS))
+    /** Lumen's dock is one row, as long as it needs; past [COLUMNS] it scrolls sideways. */
+    fun slot(index: Int) = Pair(margin + pitchX * index, topRowY)
 
     fun scrollFor(row: Int, rows: Int): Dp {
         if (row <= 0) return 0.dp
@@ -145,7 +146,7 @@ fun HomeScreen(
     var pillFocused by remember { mutableStateOf(false) }
     var lastFocusedIndex by remember { mutableStateOf(0) }
     val focusedIndex = apps.indexOfFirst { it.key == focusedKey }
-    val focusedRow = if (pillFocused || focusedIndex < 0) 0 else focusedIndex / COLUMNS
+    val focusedRow = 0
     val gridEnabled = overlay == Overlay.None
 
     // Grid scroll offset (px). The remote sets it from the focused row; a finger drags it freely
@@ -252,8 +253,7 @@ fun HomeScreen(
                     when (code) {
                         NativeKeyEvent.KEYCODE_DPAD_LEFT -> vm.moveBy(-1)
                         NativeKeyEvent.KEYCODE_DPAD_RIGHT -> vm.moveBy(1)
-                        NativeKeyEvent.KEYCODE_DPAD_UP -> vm.moveBy(-COLUMNS)
-                        NativeKeyEvent.KEYCODE_DPAD_DOWN -> vm.moveBy(COLUMNS)
+                        NativeKeyEvent.KEYCODE_DPAD_UP, NativeKeyEvent.KEYCODE_DPAD_DOWN -> Unit
                         NativeKeyEvent.KEYCODE_BACK, NativeKeyEvent.KEYCODE_DPAD_CENTER,
                         NativeKeyEvent.KEYCODE_ENTER, NativeKeyEvent.KEYCODE_NUMPAD_ENTER -> vm.endMove()
                         else -> return@onPreviewKeyEvent false
@@ -281,7 +281,12 @@ fun HomeScreen(
         val metrics = remember(maxWidth, maxHeight) {
             GridMetrics(maxWidth, maxHeight, true)
         }
-        val rows = (apps.size + COLUMNS - 1) / COLUMNS
+        val rows = 1
+        // The dock slides left once focus passes its sixth place, keeping the focused app in view.
+        val dockShift by animateDpAsState(
+            metrics.pitchX * ((if (focusedIndex >= 0) focusedIndex else lastFocusedIndex) - (COLUMNS - 1)).coerceAtLeast(0),
+            spring(dampingRatio = 1f, stiffness = 300f), label = "dock-shift",
+        )
         val collapsePx = with(density) { (metrics.topRowY - metrics.restY).toPx() }
 
         val target = with(density) { metrics.scrollFor(focusedRow, rows).toPx() }
@@ -382,7 +387,7 @@ fun HomeScreen(
                 apps.forEachIndexed { index, app ->
                     key(app.key) {
                         val (x, y) = metrics.slot(index)
-                        val slotPx = with(density) { IntOffset(x.roundToPx(), y.roundToPx()) }
+                        val slotPx = with(density) { IntOffset((x - dockShift).roundToPx(), y.roundToPx()) }
                         val slot = animateIntOffsetAsState(
                             slotPx,
                             spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow),
@@ -396,10 +401,8 @@ fun HomeScreen(
                             enabled = gridEnabled,
                             moving = moving == app.key,
                             appearDelayMs = (index * 28).coerceAtMost(320),
-                            // The top row sits on the glass until the grid comes in.
-                            onGlass = if (index < COLUMNS) {
-                                { (1f - scroll.value / collapsePx * 2f).coerceIn(0f, 1f) }
-                            } else null,
+                            // The dock sits on the glass.
+                            onGlass = { (1f - scroll.value / collapsePx * 2f).coerceIn(0f, 1f) },
                             onFocused = {
                                 heroFocused = false
                                 focusedKey = app.key

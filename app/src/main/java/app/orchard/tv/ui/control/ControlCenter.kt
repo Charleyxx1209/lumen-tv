@@ -63,6 +63,7 @@ import app.orchard.tv.BuildConfig
 import app.orchard.tv.HomeViewModel
 import app.orchard.tv.Overlay
 import app.orchard.tv.R
+import kotlinx.coroutines.launch
 import app.orchard.tv.update.Updates
 import app.orchard.tv.settings.AerialSettings
 import app.orchard.tv.system.HomeStatus
@@ -103,6 +104,7 @@ fun ControlCenter(
             CcPage.Main -> onClose()
             CcPage.Inputs -> vm.overlay = Overlay.ControlCenter(CcPage.Main)
             CcPage.InputSettings -> vm.overlay = Overlay.ControlCenter(CcPage.Inputs)
+            CcPage.City -> vm.overlay = Overlay.ControlCenter(CcPage.Main)
         }
     }
 
@@ -145,6 +147,7 @@ fun ControlCenter(
                         CcPage.Main -> MainPage(vm, now, visible, onOpen)
                         CcPage.Inputs -> InputsPage(vm, visible, onOpen)
                         CcPage.InputSettings -> InputSettingsPage(vm, visible)
+                        CcPage.City -> CityPage(vm, visible)
                     }
                 }
             }
@@ -207,6 +210,13 @@ private fun MainPage(vm: HomeViewModel, now: LocalDateTime, takeFocus: Boolean, 
         BrightnessRow(vm)
 
 
+        // The weather's city: guessed from the network, which in China often lands a city off.
+        MenuRow(
+            Glyph.CloudSun,
+            stringResource(R.string.cc_city),
+            trailing = if (app.orchard.tv.weather.Weather.chosen) app.orchard.tv.weather.Weather.place else stringResource(R.string.cc_city_auto),
+            onClick = { vm.overlay = Overlay.ControlCenter(CcPage.City) },
+        )
         Updates.available?.let { latest ->
             Spacer(Modifier.height(8.dp))
             // Downloads and opens the system installer, which asks on screen.
@@ -395,6 +405,44 @@ private fun InputsPage(vm: HomeViewModel, takeFocus: Boolean, onOpen: (android.c
         if (vm.sources.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
             MenuRow(Glyph.Gear, stringResource(R.string.cc_inputs_settings), onClick = { vm.overlay = Overlay.ControlCenter(CcPage.InputSettings) })
+        }
+    }
+}
+
+/** Cities for the weather, most populous first; the owner's own city is reached by its province's. */
+private val CITIES = listOf(
+    "北京", "上海", "广州", "深圳", "成都", "重庆", "杭州", "武汉", "西安", "南京", "天津", "苏州",
+    "长沙", "郑州", "东莞", "青岛", "沈阳", "宁波", "昆明", "合肥", "佛山", "福州", "厦门", "济南",
+    "大连", "哈尔滨", "长春", "石家庄", "南昌", "南宁", "贵阳", "太原", "兰州", "乌鲁木齐", "呼和浩特",
+    "海口", "三亚", "银川", "西宁", "拉萨", "无锡", "温州", "珠海", "香港", "澳门", "台北",
+)
+
+/** Where the weather is for: found from the network, or one of [CITIES]. */
+@Composable
+private fun CityPage(vm: HomeViewModel, takeFocus: Boolean) {
+    val first = remember { FocusRequester() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    LaunchedEffect(Unit) {
+        if (!takeFocus) return@LaunchedEffect
+        withFrameNanos { }
+        runCatching { first.requestFocus() }
+    }
+    val back = { vm.overlay = Overlay.ControlCenter(CcPage.Main) }
+    Column(Modifier.heightIn(max = 470.dp).verticalScroll(rememberScrollState())) {
+        MenuRow(Glyph.ChevronLeft, stringResource(R.string.cc_city), onClick = back)
+        Spacer(Modifier.height(8.dp))
+        MenuRow(
+            if (!app.orchard.tv.weather.Weather.chosen) Glyph.Check else Glyph.Wifi,
+            stringResource(R.string.cc_city_auto),
+            focusRequester = first,
+            onClick = { app.orchard.tv.weather.Weather.useNetworkLocation(); back() },
+        )
+        CITIES.forEach { city ->
+            MenuRow(
+                if (app.orchard.tv.weather.Weather.chosen && app.orchard.tv.weather.Weather.place == city) Glyph.Check else Glyph.CloudSun,
+                city,
+                onClick = { scope.launch { app.orchard.tv.weather.Weather.choose(city) }; back() },
+            )
         }
     }
 }
