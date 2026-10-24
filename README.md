@@ -87,7 +87,7 @@ TCL / 雷鸟的 ADB 开关藏在隐藏菜单里：
 ### 第二步：安装并接管首页
 
 ```bash
-git clone https://github.com/Charleyxx1209/lumen-tv.git
+git clone https://github.com/SiaBuilt/lumen-tv.git
 cd lumen-tv
 TV=192.168.1.12 tools/install.sh guard
 ```

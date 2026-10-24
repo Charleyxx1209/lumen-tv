@@ -22,8 +22,8 @@ cp version.txt "$OUT/public/version.txt"
 cp "$APK" "$OUT/public/lumen-guard.apk"
 cat > "$OUT/public/index.html" <<'HTML'
 <!doctype html><meta charset="utf-8"><title>Lumen</title>
-<meta http-equiv="refresh" content="0; url=https://github.com/Charleyxx1209/lumen-tv">
-<a href="https://github.com/Charleyxx1209/lumen-tv">Lumen</a>
+<meta http-equiv="refresh" content="0; url=https://github.com/SiaBuilt/lumen-tv">
+<a href="https://github.com/SiaBuilt/lumen-tv">Lumen</a>
 HTML
 # The version file must never be cached for long: TVs check it every few hours.
 cat > "$OUT/public/_headers" <<'H'

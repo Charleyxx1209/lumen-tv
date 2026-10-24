@@ -32,8 +32,8 @@ object Updates {
         // Cloudflare Pages on the owner's domain: reachable from China, unlike GitHub and jsDelivr
         // (both failed from the TCL 65V8L, 2026-10-22). Published by tools/publish-update.sh.
         "https://lumen.siabuilt.com/version.txt",
-        "https://cdn.jsdelivr.net/gh/Charleyxx1209/lumen-tv@main/version.txt",
-        "https://raw.githubusercontent.com/Charleyxx1209/lumen-tv/main/version.txt",
+        "https://cdn.jsdelivr.net/gh/SiaBuilt/lumen-tv@main/version.txt",
+        "https://raw.githubusercontent.com/SiaBuilt/lumen-tv/main/version.txt",
     )
     private const val CHECK_EVERY_MS = 3 * 60 * 60 * 1000L
     private const val RETRY_MS = 10 * 60 * 1000L
@@ -129,7 +129,7 @@ object Updates {
             val apk = withContext(Dispatchers.IO) {
                 listOf(
                     "https://lumen.siabuilt.com/lumen-${BuildConfig.FLAVOR}.apk",
-                    "https://github.com/Charleyxx1209/lumen-tv/releases/download/v$version/lumen-${BuildConfig.FLAVOR}.apk",
+                    "https://github.com/SiaBuilt/lumen-tv/releases/download/v$version/lumen-${BuildConfig.FLAVOR}.apk",
                 ).firstNotNullOfOrNull { url ->
                     runCatching { download(url, context) }
                         .onFailure { Log.w(TAG, "could not download $version from $url", it) }

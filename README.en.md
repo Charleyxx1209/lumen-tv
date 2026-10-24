@@ -87,7 +87,7 @@ The first time you connect, the TV asks "Allow USB debugging?". Choose **Allow**
 ### Step 2: install and take over Home
 
 ```bash
-git clone https://github.com/Charleyxx1209/lumen-tv.git
+git clone https://github.com/SiaBuilt/lumen-tv.git
 cd lumen-tv
 TV=192.168.1.12 tools/install.sh guard
 ```
